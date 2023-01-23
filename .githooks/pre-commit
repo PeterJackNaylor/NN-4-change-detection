@@ -1,0 +1,3 @@
+#!/bin/sh
+black python/src
+flake8 python/src
