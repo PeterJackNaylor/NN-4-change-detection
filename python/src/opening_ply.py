@@ -4,6 +4,7 @@ import numpy as np
 from plyfile import PlyData, PlyElement
 
 
+
 def ply_to_npy(f):
     with open(f, 'rb') as f:
         plydata = PlyData.read(f)
