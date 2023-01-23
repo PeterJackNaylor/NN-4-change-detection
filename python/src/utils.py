@@ -1,14 +1,14 @@
-
 import numpy as np
 from tqdm import tqdm
 from sklearn.metrics import confusion_matrix
 
+
 def compute_jaccard(ytrue, yhat):
-    cm = confusion_matrix(ytrue, yhat, labels=[0,1,2])
-    tp = cm[1:,1:].sum()
-    jaccard_bin = tp / (cm[0,1:].sum() + cm[1:,0].sum() + tp)
-    jaccard_mc_1 = cm[1,1] / (cm[1,:].sum() + cm[:,1].sum() - cm[1,1])
-    jaccard_mc_2 = cm[2,2] / (cm[2,:].sum() + cm[:,2].sum() - cm[2,2])
+    cm = confusion_matrix(ytrue, yhat, labels=[0, 1, 2])
+    tp = cm[1:, 1:].sum()
+    jaccard_bin = tp / (cm[0, 1:].sum() + cm[1:, 0].sum() + tp)
+    jaccard_mc_1 = cm[1, 1] / (cm[1, :].sum() + cm[:, 1].sum() - cm[1, 1])
+    jaccard_mc_2 = cm[2, 2] / (cm[2, :].sum() + cm[:, 2].sum() - cm[2, 2])
     return jaccard_bin, np.mean([jaccard_mc_1, jaccard_mc_2])
 
 
@@ -21,7 +21,7 @@ def compute_iou(diffz, y, threshold=None):
         t_range = [threshold]
     else:
         std = np.std(diffz)
-        t_range = (np.arange(0, diffz.max(), step=std / 10))
+        t_range = np.arange(0, diffz.max(), step=std / 10)
     for thresh in tqdm(t_range):
         y_pred = np.zeros_like(y)
         y_pred[diffz > thresh] = 1

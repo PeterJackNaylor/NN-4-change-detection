@@ -42,9 +42,12 @@ if double == "double":
         name1 = n0
     time = time0 = time1 = -1
 
-
-    table0, model0, B0, nv0 = load_csv_weight_npz(csvfile0, None, w0_file, npz_0, name0, time)
-    table1, model1, B1, nv1 = load_csv_weight_npz(csvfile1, None, w1_file, npz_1, name1, time)
+    table0, model0, B0, nv0 = load_csv_weight_npz(
+        csvfile0, None, w0_file, npz_0, name0, time
+    )
+    table1, model1, B1, nv1 = load_csv_weight_npz(
+        csvfile1, None, w1_file, npz_1, name1, time
+    )
 else:
 
     weight = sys.argv[2]
@@ -58,14 +61,16 @@ else:
     dataname = weight.split("__")[0]
     name = weight.split(".p")[0]
 
-    table, model, B, nv = load_csv_weight_npz(csvfile0, csvfile1, weight, npz, name, time)
+    table, model, B, nv = load_csv_weight_npz(
+        csvfile0, csvfile1, weight, npz, name, time
+    )
     table0 = table[table["T"] == 0]
     table1 = table[table["T"] == 1]
     model0, model1 = model, model
     B0, B1 = B, B
     nv0, nv1 = nv, nv
-    time0 = 0.
-    time1 = 1.
+    time0 = 0.0
+    time1 = 1.0
 
 z0_n = table0.shape[0]
 z1_n = table1.shape[0]
@@ -74,8 +79,8 @@ labels_1_n = (table1["label"].astype(int).values == 1).sum()
 labels_2_n = (table1["label"].astype(int).values == 2).sum()
 
 grid_indices = define_grid(table0, table1, step=2)
-xy_grid = grid_indices.copy()#.astype("float32")
-xy_onz1 = table1[['X', 'Y']].values#.astype("float32")
+xy_grid = grid_indices.copy()  # .astype("float32")
+xy_onz1 = table1[["X", "Y"]].values  # .astype("float32")
 
 z0_on1 = predict_z(model0, B0, nv0, xy_onz1, time=time0)
 z1_on1 = predict_z(model1, B1, nv1, xy_onz1, time=time1)
@@ -86,14 +91,12 @@ z0_ongrid = predict_z(model0, B0, nv0, xy_grid, time=time0)
 z1_ongrid = predict_z(model1, B1, nv1, xy_grid, time=time1)
 
 
-
 diff_z = z1_ongrid - z0_ongrid
 y_on1 = table1["label"].values
 # compute IoU
 bin_score, mc_score = compute_iou(diff_z_on1, y_on1)
 iou_bin, thresh_bin, pred_bin = bin_score
 iou_mc, thresh_mc, pred_mc = mc_score
-
 
 
 table1_copy = table1.copy()
@@ -120,12 +123,12 @@ elif size1 > 5e4:
     factor = 1
 elif size1 > 1e4:
     factor = 1
-else: 
+else:
     factor = 1
 
 idx = np.arange(size1)
 np.random.shuffle(idx)
-idx = idx[:size1 // factor]
+idx = idx[: size1 // factor]
 
 sub_X = table1.X.values[idx]
 sub_Y = table1.X.values[idx]
@@ -157,11 +160,11 @@ name_png = f"{dataname}_predz0_on_z1.png"
 fig.write_image(name_png)
 
 
-fig = fig_3d(grid_indices[:,0], grid_indices[:,1], diff_z, result.label)
+fig = fig_3d(grid_indices[:, 0], grid_indices[:, 1], diff_z, result.label)
 name_png = f"diff_{dataname}_labels.png"
 fig.write_image(name_png)
 
-fig = fig_3d(grid_indices[:,0], grid_indices[:,1], diff_z, diff_z)
+fig = fig_3d(grid_indices[:, 0], grid_indices[:, 1], diff_z, diff_z)
 name_png = f"diff_{dataname}.png"
 fig.write_image(name_png)
 
@@ -169,12 +172,23 @@ fig.write_image(name_png)
 
 name_npz = f"{double}_{dataname}_results.npz"
 
-np.savez(name_npz, indices=grid_indices, 
-    x1=table1.X.values, y1=table1.Y.values,
-    z0_on1=z0_on1,  z1_on1=z1_on1, 
-    z0_ongrid=z0_ongrid, z1_ongrid=z1_ongrid, 
-    labels_on1=y_on1, labels_ongrid=result.label,
-    IoU_mc=iou_mc, thresh_mc=thresh_mc,
-    IoU_bin=iou_bin, thresh_bin=thresh_bin,
-    z0_n=z0_n, z1_n=z1_n, labels_1_n=labels_1_n, labels_2_n=labels_2_n)
-
+np.savez(
+    name_npz,
+    indices=grid_indices,
+    x1=table1.X.values,
+    y1=table1.Y.values,
+    z0_on1=z0_on1,
+    z1_on1=z1_on1,
+    z0_ongrid=z0_ongrid,
+    z1_ongrid=z1_ongrid,
+    labels_on1=y_on1,
+    labels_ongrid=result.label,
+    IoU_mc=iou_mc,
+    thresh_mc=thresh_mc,
+    IoU_bin=iou_bin,
+    thresh_bin=thresh_bin,
+    z0_n=z0_n,
+    z1_n=z1_n,
+    labels_1_n=labels_1_n,
+    labels_2_n=labels_2_n,
+)

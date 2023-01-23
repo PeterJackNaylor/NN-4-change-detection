@@ -3,22 +3,39 @@ import numpy as np
 import argparse
 
 
-import torch 
+import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm, trange
+
 
 # Fourier feature mapping
 def input_mapping(x, B):
     if B is None:
         return x
     else:
-        x_proj = (2.*np.pi*x) @ B.T
+        x_proj = (2.0 * np.pi * x) @ B.T
         return np.concatenate([np.sin(x_proj), np.cos(x_proj)], axis=-1)
 
-class XYZ(Dataset):
 
-    def __init__(self, csv_file0, csv_file1, train=False, train_fraction=0.8, fourier=False, seed=42, predict=False, scale=1.0, mapping_size=256, B=None, normalize="mean", nv=None, time=False, gradient_regul=False):
+class XYZ(Dataset):
+    def __init__(
+        self,
+        csv_file0,
+        csv_file1,
+        train=False,
+        train_fraction=0.8,
+        fourier=False,
+        seed=42,
+        predict=False,
+        scale=1.0,
+        mapping_size=256,
+        B=None,
+        normalize="mean",
+        nv=None,
+        time=False,
+        gradient_regul=False,
+    ):
         """
         Args:
             csv_file (string): Path to the csv file with annotations.
@@ -26,48 +43,52 @@ class XYZ(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-        self.table = pd.read_csv(csv_file0)[['X', 'Y', 'Z']]
-        self.table["T"] = 0
+        table = pd.read_csv(csv_file0)[["X", "Y", "Z"]]
+        table["T"] = 0
         if csv_file1:
-            table1 = pd.read_csv(csv_file1)[['X', 'Y', 'Z']]
+            table1 = pd.read_csv(csv_file1)[["X", "Y", "Z"]]
             table1["T"] = 1
-            self.table = pd.concat([self.table, table1], axis=0).reset_index(drop=True)
-        max_coord = (self.table.X.max(), self.table.Y.max(), self.table.Z.max())
-        min_coord = (self.table.X.min(), self.table.Y.min(), self.table.Z.min())
-        n = self.table.shape[0]
+            table = pd.concat([table, table1], axis=0).reset_index(drop=True)
+        max_coord = (table.X.max(), table.Y.max(), table.Z.max())
+        min_coord = (table.X.min(), table.Y.min(), table.Z.min())
+        n = table.shape[0]
         if not predict:
             idx = np.arange(n)
             np.random.seed(seed)
             np.random.shuffle(idx)
             n0 = int(n * train_fraction)
             idx = idx[:n0] if train else idx[n0:]
-            self.table = self.table.loc[idx]
-        self.table = self.table.reset_index(drop=True)
+            table = table.loc[idx]
+        table = table.reset_index(drop=True)
         if normalize:
             if nv is None:
                 nv_l = []
-                for i, var in enumerate(self.table.columns[:-1]):
+                for i, var in enumerate(table.columns[:-1]):
                     if normalize == "mean":
-                        m, s = self.table[var].mean(), self.table[var].std()
+                        m, s = table[var].mean(), table[var].std()
                     elif normalize == "one_minus":
-                        m =  (max_coord[i] + min_coord[i]) / 2
-                        s =  (max_coord[i] - min_coord[i]) / 2
+                        m = (max_coord[i] + min_coord[i]) / 2
+                        s = (max_coord[i] - min_coord[i]) / 2
                     nv_l.append((m, s))
-                self.nv = nv_l
-            else:
-                self.nv = nv
-            for i, var in enumerate(self.table.columns[:-1]):
-                self.table[var] = (self.table[var] - self.nv[i][0]) / self.nv[i][1]
+                nv = nv_l
+
+            for i, var in enumerate(table.columns[:-1]):
+                table[var] = (table[var] - nv[i][0]) / nv[i][1]
+
+        self.table = table
+        self.nv = nv
         self.grad_regul = gradient_regul
         self.fourier = fourier
         self.time = time
-        self.input_size = 3 if self.time else 2
+        input_size = 3 if self.time else 2
         if self.fourier:
             if B is not None:
                 self.B = B
             else:
-                self.B = np.random.normal(size=(mapping_size, self.input_size)) * scale
-                self.input_size = mapping_size * 2
+                B = np.random.normal(size=(mapping_size, input_size))
+                self.B = B * scale
+                input_size = mapping_size * 2
+        self.input_size = input_size
 
     def __len__(self):
         return len(self.table)
@@ -75,17 +96,17 @@ class XYZ(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        x = self.table.loc[idx, 'X']
-        y = self.table.loc[idx, 'Y']
+        x = self.table.loc[idx, "X"]
+        y = self.table.loc[idx, "Y"]
         if self.time:
-            t = self.table.loc[idx, 'T']
+            t = self.table.loc[idx, "T"]
             sample = np.array([x, y, t])
             if self.grad_regul:
-                sample_t = np.array([x, y, 1-t])
+                sample_t = np.array([x, y, 1 - t])
         else:
             sample = np.array([x, y])
 
-        target = self.table.loc[idx, 'Z']
+        target = self.table.loc[idx, "Z"]
 
         if self.fourier:
             sample = self.fourier_transform(sample)
@@ -105,8 +126,16 @@ class XYZ(Dataset):
 
 
 class XYZ_predict(Dataset):
-
-    def __init__(self, csv_file0, csv_file1=None, fourier=False, B=None, normalize="mean", nv=None, time=-1):
+    def __init__(
+        self,
+        csv_file0,
+        csv_file1=None,
+        fourier=False,
+        B=None,
+        normalize="mean",
+        nv=None,
+        time=-1,
+    ):
         """
         Args:
             csv_file (string): Path to the csv file with annotations.
@@ -114,12 +143,11 @@ class XYZ_predict(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-        self.table = pd.read_csv(csv_file0)[['X', 'Y', 'Z']]
+        self.table = pd.read_csv(csv_file0)[["X", "Y", "Z"]]
         self.table["T"] = 0
-        n = self.table.shape[0]
 
         if csv_file1:
-            table1 = pd.read_csv(csv_file1)[['X', 'Y', 'Z']]
+            table1 = pd.read_csv(csv_file1)[["X", "Y", "Z"]]
             table1["T"] = 1
             self.table = pd.concat([self.table, table1], axis=0)
 
@@ -129,14 +157,16 @@ class XYZ_predict(Dataset):
         if self.fourier:
             self.B = B
 
-
         xmax = int(self.table.X.max())
         xmin = int(self.table.X.min())
 
         ymax = int(self.table.Y.max())
         ymin = int(self.table.Y.min())
 
-        xx, yy = np.meshgrid(np.arange(xmin, xmax, 2), np.arange(ymin, ymax, 2))
+        xx, yy = np.meshgrid(
+            np.arange(xmin, xmax, 2),
+            np.arange(ymin, ymax, 2),
+        )
         xx = xx.astype(float)
         yy = yy.astype(float)
         self.indices = np.vstack([xx.ravel(), yy.ravel()]).T
@@ -166,7 +196,18 @@ class XYZ_predict(Dataset):
         t_sample = input_mapping(sample, self.B)
         return t_sample
 
-def return_dataset_prediction(csv0, csv1, bs=2048, workers=8, fourier=False, B=None, normalize="mean", nv=None, time=0):
+
+def return_dataset_prediction(
+    csv0,
+    csv1,
+    bs=2048,
+    workers=8,
+    fourier=False,
+    B=None,
+    normalize="mean",
+    nv=None,
+    time=0,
+):
     xyz = XYZ_predict(csv0, csv1, fourier=fourier, B=B, nv=nv, time=time)
     loader = DataLoader(
         xyz,
@@ -178,11 +219,43 @@ def return_dataset_prediction(csv0, csv1, bs=2048, workers=8, fourier=False, B=N
     )
     return loader, xyz
 
-def return_dataset(csv0, csv1=None, bs=2048, workers=8, mapping_size=256, fourier=False, normalize="mean", scale=1.0, time=False, gradient_regul=False):
-    xyz_train = XYZ(csv0, csv1, train=True, mapping_size=mapping_size, fourier=fourier, scale=scale, normalize=normalize, time=time, gradient_regul=gradient_regul)
+
+def return_dataset(
+    csv0,
+    csv1=None,
+    bs=2048,
+    workers=8,
+    mapping_size=256,
+    fourier=False,
+    normalize="mean",
+    scale=1.0,
+    time=False,
+    gradient_regul=False,
+):
+    xyz_train = XYZ(
+        csv0,
+        csv1,
+        train=True,
+        mapping_size=mapping_size,
+        fourier=fourier,
+        scale=scale,
+        normalize=normalize,
+        time=time,
+        gradient_regul=gradient_regul,
+    )
     nv = xyz_train.nv
     B = xyz_train.B if fourier else None
-    xyz_test = XYZ(csv0, csv1, train=False, mapping_size=mapping_size, fourier=fourier, B=B, normalize=normalize, nv=nv, time=time)
+    xyz_test = XYZ(
+        csv0,
+        csv1,
+        train=False,
+        mapping_size=mapping_size,
+        fourier=fourier,
+        B=B,
+        normalize=normalize,
+        nv=nv,
+        time=time,
+    )
     while xyz_train.table.shape[0] < bs:
         bs = bs // 2
     train_loader = DataLoader(
@@ -207,7 +280,7 @@ def return_dataset(csv0, csv1=None, bs=2048, workers=8, mapping_size=256, fourie
 
 
 def predict_loop(dataloader, model):
-    
+
     preds = []
     with torch.no_grad():
         for X in dataloader:
@@ -218,6 +291,7 @@ def predict_loop(dataloader, model):
             preds.append(pred)
     preds = torch.cat(preds)
     return preds
+
 
 def test_loop(dataloader, model, loss_fn):
     num_batches = len(dataloader)
@@ -230,19 +304,26 @@ def test_loop(dataloader, model, loss_fn):
             test_loss = test_loss + loss_fn(pred, z).item()
 
     test_loss /= num_batches
-    
+
     print(f"\n Test Error: \n Avg loss: {test_loss:>8f} \n")
     return test_loss
 
-def estimate_density(dataset, dataset_test, model, hp, name, lambda_t=1.0, gradient_regul=False):
-    optimizer = torch.optim.Adam(model.parameters(), lr=hp['lr'], weight_decay=hp['wd'])
+
+def estimate_density(
+    dataset, dataset_test, model, hp, name, lambda_t=1.0, gradient_regul=False
+):
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=hp["lr"],
+        weight_decay=hp["wd"],
+    )
     loss_fn = nn.MSELoss()
     if gradient_regul:
         loss_fn_t = nn.L1Loss()
     model.train()
     best_test_score = np.inf
     best_epoch = 0
-    for epoch in trange(1, hp["epoch"]+1):
+    for epoch in trange(1, hp["epoch"] + 1):
 
         running_loss, total_num, train_bar = 0.0, 0, tqdm(dataset)
         for data_tuple in train_bar:
@@ -252,8 +333,10 @@ def estimate_density(dataset, dataset_test, model, hp, name, lambda_t=1.0, gradi
                     inp, inp_t, target = data_tuple
                 else:
                     inp, target = data_tuple
-                    
-                inp, target = inp.cuda(non_blocking=True), target.cuda(non_blocking=True)
+
+                inp, target = inp.cuda(non_blocking=True), target.cuda(
+                    non_blocking=True
+                )
                 target_pred = model(inp)
                 loss = loss_fn(target_pred, target)
 
@@ -279,16 +362,14 @@ def estimate_density(dataset, dataset_test, model, hp, name, lambda_t=1.0, gradi
                 best_test_score = test_score
                 best_epoch = epoch
                 print(f"best model is now from epoch {epoch}")
-                torch.save(
-                    model.state_dict(),
-                    name
-                )
+                torch.save(model.state_dict(), name)
             elif epoch - best_epoch > 20:
                 for g in optimizer.param_groups:
-                    g['lr'] = g['lr'] / 10
+                    g["lr"] = g["lr"] / 10
 
     model.load_state_dict(torch.load(name))
     return model, best_test_score
+
 
 class Model(nn.Module):
     def __init__(self, input_size, p=0.5, activation="tanh"):
@@ -317,6 +398,7 @@ class Model(nn.Module):
         regression = self.linear_stack(x)
         regression = torch.squeeze(regression)
         return regression
+
 
 def parser_f():
 
@@ -394,10 +476,9 @@ def parser_f():
     )
     parser.add_argument(
         "--lambda_t",
-        default=0.,
+        default=0.0,
         type=float,
     )
     args = parser.parse_args()
     args.gradient_regul = args.lambda_t != 0
     return args
-

@@ -1,4 +1,3 @@
-
 import numpy as np
 from glob import glob
 import sys
@@ -7,6 +6,7 @@ from sklearn.metrics import accuracy_score
 from scipy.stats import pearsonr
 import pandas as pd
 from tqdm import tqdm
+
 
 def open_npz_compute(f, OT=False):
     file = np.load(f)
@@ -23,7 +23,8 @@ def open_npz_compute(f, OT=False):
     pred[z < -th] = 1
     iou = file["IoU_bin"]
     iou_mc = file["IoU_mc"]
-    return z, gt, pred, iou, iou_mc#, opened_z
+    return z, gt, pred, iou, iou_mc  # , opened_z
+
 
 files = glob("*.npz")
 
@@ -57,15 +58,16 @@ for f in tqdm(files):
 
 
 tmp_table = pd.DataFrame(
-    {"chunk_id": chunk_id,
-    "iou": iou_chunks,
-    "iou_mc": iou_mc_chunks,
-    "max_changes": max_changes,
-    "min_changes": min_changes,
-    "nlabels": labels,
-    "size": size,
-    "acc": acc,
-    "pearson": pearson
+    {
+        "chunk_id": chunk_id,
+        "iou": iou_chunks,
+        "iou_mc": iou_mc_chunks,
+        "max_changes": max_changes,
+        "min_changes": min_changes,
+        "nlabels": labels,
+        "size": size,
+        "acc": acc,
+        "pearson": pearson,
     }
 )
 
@@ -78,19 +80,17 @@ prediction = np.concatenate(prediction, axis=0)
 gt = np.concatenate(gt, axis=0)
 
 
-
 table = pd.DataFrame()
 print("Computing iou")
-iou_bin, _, _, iou_mc, _, _ = compute_iou(diff_z, gt)
-iou_bin_fix_th, _, _, iou_mc_fix_th, _, _ = compute_iou(diff_z, gt, threshold=5)
+(iou_bin, _, _, iou_mc, _, _) = compute_iou(diff_z, gt)
+(iou_bin_th, _, _, iou_mc_th, _, _) = compute_iou(diff_z, gt, 5)
 
 # iou_opened, _, _, iou_mc_opened, _, _ = compute_iou(diff_z_opened, gt)
-# iou_opened_fix_th, _, _, iou_mc_opened_fix_th, _, _ = compute_iou(diff_z_opened, gt, threshold=5)
 
 table.loc[dataname, "iou_mc"] = iou_mc
 table.loc[dataname, "iou"] = iou_bin
-table.loc[dataname, "iou_mc_threshold"] = iou_mc_fix_th
-table.loc[dataname, "iou_threshold"] = iou_bin_fix_th
+table.loc[dataname, "iou_mc_threshold"] = iou_mc_th
+table.loc[dataname, "iou_threshold"] = iou_bin_th
 
 # table.loc[dataname, "iou_mc_opened_threshold"] = iou_mc_opened_fix_th
 # table.loc[dataname, "iou_opened_threshold"] = iou_opened_fix_th
