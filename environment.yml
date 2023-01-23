@@ -1,0 +1,21 @@
+name: CloudPoint
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # project-specific packages
+  - pytorch
+  # required
+  - libblas=*=*_mkl
+  - nextflow
+  - pip
+  - pytest
+  - python=3.8.13
+  # usually good to have
+  - pandas
+  - scikit-learn
+  - tqdm
+  - plotly
+  - pip:
+    - plyfile
+    - kaleido
