@@ -10,6 +10,7 @@ process one_density_estimation {
         each FOUR
         each MAPPINGSIZE
         each NORM
+        each ARCH
         each LR
         each WD
         each LAMBDA_T
@@ -28,7 +29,7 @@ process one_density_estimation {
         }else{
             postfix = "singleRegulated"
         }
-        NAME = "${CHUNK_ID}-${DATANAME}__SCALE=${SCALE}__FOUR=${FOUR}__NORM=${NORM}__LR=${LR}__WD=${WD}__ACT=${ACT}__MAPPINGSIZE=${MAPPINGSIZE}__REGUL=${LAMBDA_T}_${postfix}"
+        NAME = "${CHUNK_ID}-${DATANAME}__SCALE=${SCALE}__FOUR=${FOUR}__NORM=${NORM}__ARCH=${ARCH}__LR=${LR}__WD=${WD}__ACT=${ACT}__MAPPINGSIZE=${MAPPINGSIZE}__REGUL=${LAMBDA_T}_${postfix}"
         """
         python $py_file \
             --csv0 $FILE0 \
@@ -38,6 +39,7 @@ process one_density_estimation {
             --mapping_size $MAPPINGSIZE \
             $FOUR \
             --normalize $NORM \
+            --arch $ARCH\
             --lr $LR \
             --wd $WD \
             --lambda_t ${LAMBDA_T} \
@@ -50,7 +52,7 @@ process one_density_estimation {
 
 pyselect = file("python/src/selectbest.py")
 process selection {
-    publishDir "result/single/selection", mode: 'symlink'
+    publishDir "${params.out}/single/selection", mode: 'symlink'
     input:
         path(CSV)
 
@@ -68,7 +70,7 @@ process = file("python/src/process_diff.py")
 
 process post_processing {
     label 'gpu'
-    publishDir "result/single/${DATANAMES[0]}/", mode: 'symlink'
+    publishDir "${params.out}/single/${DATANAMES}/", mode: 'symlink'
     input:
         tuple val(NAMES), val(DATANAMES), path(NPZ), path(WEIGHTS), path(FILE0), path(FILE1), val(CHUNK_ID), val(METHOD)
 
@@ -83,7 +85,7 @@ process post_processing {
 
 
 process aggregate {
-    publishDir "result/${METHOD}/", mode: 'symlink'
+    publishDir "${params.out}/${METHOD}/", mode: 'symlink'
     input:
         tuple val(DATANAME), val(METHOD), path(NPZ)
     output:
@@ -112,13 +114,14 @@ workflow one_density {
         fourier
         mapping_size
         norm
+        arch
         lr
         wd
         lambda_t
         act
         epoch
     main:
-        one_density_estimation(paired_data, scale, fourier, mapping_size, norm, lr, wd, lambda_t, act, epoch)
+        one_density_estimation(paired_data, scale, fourier, mapping_size, norm, arch, lr, wd, lambda_t, act, epoch)
         one_density_estimation.out[0].collectFile(name:"together.csv", keepHeader: true, skip:1).set{training_scores}
         selection(training_scores)
         selection.out[0] .splitCsv(skip:1, sep: ',')

@@ -1,21 +1,20 @@
 
 include { two_density } from './pipeline_double_density.nf'
 include { one_density } from './pipeline_single_density.nf'
-include { OT } from './ot.nf'
 
 // NeRF Parameters
-scale = [1.0, 5.0]
-fourier = ["--fourier"]
-norm = ["one_minus"]
-lr = [0.001, 0.01, 0.1]
-mapping_size = [512]
-act = ["relu"]
-epoch = [100]
-wd = [0.0001]
-lambda_t = [0.0, 0.01, 1.0, 10.0]
+scale = params.scale
+fourier = params.fourier
+norm = params.norm
+lr = params.lr
+mapping_size = params.mapping_size
+act = params.act
+epoch = params.epoch
+arch = params.arch
+wd = params.wd
+lambda_t = params.lambda_t
 
 // Chunk Parameters
-params.extension = "ply"
 ext = params.extension
 
 // Data
@@ -37,23 +36,6 @@ process from_ply_to_txt {
         """
 }
 
-process into_chunks {
-    publishDir "result/chunks/"
-    input:
-        file(paired_file)
-        val max_point
-    output:
-        tuple val(DATANAME), path("*Chunks*{0,1}.txt")//.collate(2)//.buffer( size: 2 , skip:0 )
-    script:
-        pyfile = file("python/src/split_grid.py")
-        file0 = paired_file[0]
-        file1 = paired_file[1]
-        DATANAME = "${file0}".replaceFirst(/0.txt/, "")
-        """
-        python $pyfile ${file0} ${file1} ${max_point}
-        """
-}
-
 process append_columns_headers {
     input:
         tuple val(key), file(paired_file)
@@ -71,7 +53,7 @@ process append_columns_headers {
 
 
 process final_table {
-    publishDir "result/"
+    publishDir "${params.out}"
     input:
         file(results)
     output:
@@ -96,8 +78,8 @@ workflow {
             append_columns_headers.out.set{pairedPointsclouds}
             pairedPointsclouds.map{it -> [[it[0], it[1]], [it[0], it[2]]]}.flatten().buffer(size: 2).set{pointClouds}
         }
-        two_density(pointClouds, scale, fourier, mapping_size, norm, lr, wd, act, epoch)
-        one_density(pairedPointsclouds, scale, fourier, mapping_size, norm, lr, wd, lambda_t, act, epoch)
+        two_density(pointClouds, scale, fourier, mapping_size, norm, arch, lr, wd, act, epoch)
+        one_density(pairedPointsclouds, scale, fourier, mapping_size, norm, arch, lr, wd, lambda_t, act, epoch)
         two_density.out.concat(one_density.out).collect().set{results}
         final_table(results)
 }

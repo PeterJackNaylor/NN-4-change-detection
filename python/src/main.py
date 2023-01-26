@@ -5,9 +5,9 @@ from function_estimation import (
     return_dataset,
     return_dataset_prediction,
     estimate_density,
-    Model,
     predict_loop,
 )
+from architectures import Model
 from plotpoint import fig_3d  # plot_surface, plot_tri_grid
 import os
 
@@ -29,6 +29,7 @@ def main():
     coord_file = opt.name + ".npz"
     csv_file = opt.name + ".csv"
     activation = opt.activation
+    architecture = opt.arch
 
     train, test, B, nv = return_dataset(
         csv0,
@@ -43,7 +44,7 @@ def main():
         gradient_regul=opt.gradient_regul,
     )
 
-    model = Model(train.input_size, activation=activation)
+    model = Model(train.input_size, arch=architecture, activation=activation)
     # model = model.float()
     model = model.cuda()
     hp = {"lr": opt.lr, "epoch": opt.epochs, "wd": opt.wd}
@@ -91,7 +92,12 @@ def main():
         f_z1 = np.array(predictions1.cpu())
         f_z1 = f_z1 * nv[2][1] + nv[2][0]
 
-    info = {"wd": os.getcwd(), "name": opt.name, "score": best_score}
+    info = {
+        "wd": os.getcwd(),
+        "name": opt.name,
+        "arch": architecture,
+        "score": best_score,
+    }
     pd.DataFrame(info, index=[0]).to_csv(csv_file)
     if csv1:
         png_snap0 = opt.name + "0.png"

@@ -94,9 +94,9 @@ z1_ongrid = predict_z(model1, B1, nv1, xy_grid, time=time1)
 diff_z = z1_ongrid - z0_ongrid
 y_on1 = table1["label"].values
 # compute IoU
-bin_score, mc_score = compute_iou(diff_z_on1, y_on1)
-iou_bin, thresh_bin, pred_bin = bin_score
-iou_mc, thresh_mc, pred_mc = mc_score
+iou_bin, thresh_bin, pred_bin, iou_mc, thresh_mc, pred_mc = compute_iou(
+    diff_z_on1, y_on1
+)
 
 
 table1_copy = table1.copy()

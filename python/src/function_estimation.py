@@ -371,35 +371,6 @@ def estimate_density(
     return model, best_test_score
 
 
-class Model(nn.Module):
-    def __init__(self, input_size, p=0.5, activation="tanh"):
-        super(Model, self).__init__()
-        if activation == "tanh":
-            act = nn.Tanh
-        elif activation == "relu":
-            act = nn.ReLU
-        self.linear_stack = nn.Sequential(
-            nn.Linear(input_size, 256),
-            # nn.Dropout(p=p),
-            nn.BatchNorm1d(256),
-            act(),
-            nn.Linear(256, 128),
-            # nn.Dropout(p=p),
-            nn.BatchNorm1d(128),
-            act(),
-            nn.Linear(128, 64),
-            # nn.Dropout(p=p),
-            nn.BatchNorm1d(64),
-            act(),
-            nn.Linear(64, 1),
-        )
-
-    def forward(self, x):
-        regression = self.linear_stack(x)
-        regression = torch.squeeze(regression)
-        return regression
-
-
 def parser_f():
 
     parser = argparse.ArgumentParser(
@@ -452,6 +423,11 @@ def parser_f():
     parser.add_argument(
         "--normalize",
         default="mean",
+        type=str,
+    )
+    parser.add_argument(
+        "--arch",
+        default="default",
         type=str,
     )
     parser.add_argument(

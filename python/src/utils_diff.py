@@ -31,8 +31,9 @@ def load_csv_weight_npz(csv_file0, csv_file1, weight, npz, name, time=-1):
         input_size = 3 if time != -1 else 2
 
     act = name.split("ACT=")[1].split("_")[0]
+    arch = name.split("ARCH=")[1].split("_")[0]
 
-    model = Model(input_size, p=0.5, activation=act)
+    model = Model(input_size, arch=arch, activation=act)
     model.load_state_dict(torch.load(weight))
     npz = np.load(npz)
     B = npz["B"]

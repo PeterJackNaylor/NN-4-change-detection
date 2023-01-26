@@ -1,0 +1,12 @@
+out: result/paper
+extension: "ply"
+epoch: [100] #could do several epoch, but please keep this param to 1 element
+scale: [1.0, 5.0]
+fourier: ["--fourier"]
+norm: ["one_minus"]
+arch: ["default", "default-BN", "skipMed", "Vlarge"]
+lr: [0.001, 0.01, 0.1]
+mapping_size: [512, 1024]
+act: ["relu"]
+wd: ["0.0001"]
+lambda_t: [0.0, 0.01, 1.0, 10.]

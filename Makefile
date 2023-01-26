@@ -9,4 +9,4 @@ clipped:
 	nextflow run nextflow/main.nf -resume --extension txt -profile raiden
 
 clipped_home:
-	nextflow run nextflow/main.nf -resume --extension txt
+	nextflow run nextflow/main.nf -params-file exp_config/home.yaml -resume
