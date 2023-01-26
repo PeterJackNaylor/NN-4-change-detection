@@ -2,12 +2,12 @@ import pandas as pd
 import numpy as np
 import torch
 from function_estimation import (
-    Model,
     input_mapping,
     predict_loop,
     DataLoader,
 )
 from math import ceil, floor
+from architectures import Model
 
 
 def load_csv_weight_npz(csv_file0, csv_file1, weight, npz, name, time=-1):
