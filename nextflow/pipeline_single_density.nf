@@ -16,6 +16,8 @@ process one_density_estimation {
         each LAMBDA_T
         each ACT
         each EPOCH
+        each act_last
+
 
     output:
         path("$NAME" + ".csv")
@@ -45,7 +47,8 @@ process one_density_estimation {
             --lambda_t ${LAMBDA_T} \
             --activation $ACT \
             --name $NAME \
-            --workers 8
+            --workers 8 \
+            --act_last ${act_last}
         """
 }
 
@@ -120,8 +123,9 @@ workflow one_density {
         lambda_t
         act
         epoch
+        act_last
     main:
-        one_density_estimation(paired_data, scale, fourier, mapping_size, norm, arch, lr, wd, lambda_t, act, epoch)
+        one_density_estimation(paired_data, scale, fourier, mapping_size, norm, arch, lr, wd, lambda_t, act, epoch, act_last)
         one_density_estimation.out[0].collectFile(name:"together.csv", keepHeader: true, skip:1).set{training_scores}
         selection(training_scores)
         selection.out[0] .splitCsv(skip:1, sep: ',')

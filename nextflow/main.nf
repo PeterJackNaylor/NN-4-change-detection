@@ -79,7 +79,7 @@ workflow {
             pairedPointsclouds.map{it -> [[it[0], it[1]], [it[0], it[2]]]}.flatten().buffer(size: 2).set{pointClouds}
         }
         two_density(pointClouds, scale, fourier, mapping_size, norm, arch, lr, wd, act, epoch)
-        one_density(pairedPointsclouds, scale, fourier, mapping_size, norm, arch, lr, wd, lambda_t, act, epoch)
+        one_density(pairedPointsclouds, scale, fourier, mapping_size, norm, arch, lr, wd, lambda_t, act, epoch, params.act_last)
         two_density.out.concat(one_density.out).collect().set{results}
         final_table(results)
 }

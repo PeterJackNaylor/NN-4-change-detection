@@ -7,7 +7,7 @@ dependencies:
   - pytorch
   # required
   - libblas=*=*_mkl
-  - nextflow
+  # - nextflow
   - pip
   - pytest
   - python=3.8.13

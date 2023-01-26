@@ -455,6 +455,11 @@ def parser_f():
         default=0.0,
         type=float,
     )
+    parser.add_argument(
+        "--act_last",
+        default="prr",
+        type=str,
+    )
     args = parser.parse_args()
     args.gradient_regul = args.lambda_t != 0
     return args

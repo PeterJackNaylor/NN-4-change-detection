@@ -2,11 +2,11 @@ import pandas as pd
 import numpy as np
 import torch
 from function_estimation import (
-    Model,
     input_mapping,
     predict_loop,
     DataLoader,
 )
+from architectures import Model
 from math import ceil, floor
 
 

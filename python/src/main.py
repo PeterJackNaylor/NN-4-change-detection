@@ -30,7 +30,9 @@ def main():
     csv_file = opt.name + ".csv"
     activation = opt.activation
     architecture = opt.arch
-
+    if architecture == "SIREN":
+        act_last = opt.act_last
+        import pdb; pdb.set_trace()
     train, test, B, nv = return_dataset(
         csv0,
         csv1,
