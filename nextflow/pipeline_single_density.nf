@@ -23,13 +23,13 @@ process one_density_estimation {
         tuple path("$NAME" + "0.png"), path("$NAME" + "1.png")
 
     script:
-        CHUNK_ID = FILE0.baseName.split("-")[0]
+        DATA = FILE0.baseName.split("-")[0]
         if (LAMBDA_T == 0.0){
             postfix = "single"
         }else{
             postfix = "singleRegulated"
         }
-        NAME = "${CHUNK_ID}-${DATANAME}__SCALE=${SCALE}__FOUR=${FOUR}__NORM=${NORM}__ARCH=${ARCH}__LR=${LR}__WD=${WD}__ACT=${ACT}__MAPPINGSIZE=${MAPPINGSIZE}__REGUL=${LAMBDA_T}_${postfix}"
+        NAME = "${DATA}__SCALE=${SCALE}__FOUR=${FOUR}__NORM=${NORM}__ARCH=${ARCH}__LR=${LR}__WD=${WD}__ACT=${ACT}__MAPPINGSIZE=${MAPPINGSIZE}__REGUL=${LAMBDA_T}_${postfix}"
         """
         python $py_file \
             --csv0 $FILE0 \
