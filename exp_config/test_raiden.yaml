@@ -1,0 +1,13 @@
+out: result/test
+path: data/test/
+extension: "ply"
+epoch: [10] #could do several epoch, but please keep this param to 1 element
+scale: [1.0]
+fourier: ["--fourier"]
+norm: ["one_minus"]
+arch: ["default", "default-BN", "Vlarge"]
+lr: [0.001]
+mapping_size: [512]
+act: ["relu"]
+wd: ["0.0001"]
+lambda_t: [1.0]
