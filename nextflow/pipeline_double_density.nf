@@ -93,8 +93,7 @@ workflow two_density {
         selection(training_scores)
         selection.out[0] .splitCsv(skip:1, sep: ',')
             .set{selected}
-        two_density_estimation.out[1].join(selected, by: 0).set{test}
-        test.groupTuple(by: [1]).set{fused}
+        two_density_estimation.out[1].join(selected, by: 0).groupTuple(by: [1]).set{fused}
         post_processing(fused)
         aggregate(post_processing.out[0].groupTuple(by: [0, 1]))
     emit:
