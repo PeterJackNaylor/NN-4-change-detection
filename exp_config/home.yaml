@@ -1,4 +1,5 @@
 out: result/home
+path: "data/clippeddata/clippedMarco"
 extension: "txt"
 epoch: [10] #could do several epoch, but please keep this param to 1 element
 scale: [1.0]
