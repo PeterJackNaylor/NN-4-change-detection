@@ -70,8 +70,9 @@ process final_table {
 workflow {
     main:
         if (ext == "ply"){
-            from_ply_to_txt(paired_ply).set{pointClouds}
-            pointClouds.buffer(size: 2).map{it -> [it[0][0], it[0][1], it[1][1]]}.set{pairedPointsclouds}
+            from_ply_to_txt(paired_ply).set{ply_files}
+            ply_files.map{it -> [it[0].baseName.split("/")[-1], it[0], it[1]]}.set{pairedPointsclouds}
+            ply_files.map{it -> [[it[0].baseName.split("/")[-1], it[0]], [it[0].baseName.split("/")[-1], it[1]]]}.flatten().buffer(size: 2).set{pointClouds}
         } else {
             append_columns_headers(paired_txt)
 
