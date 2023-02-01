@@ -85,7 +85,7 @@ process post_processing {
 
 
 process aggregate {
-    publishDir "${params.out}/${METHOD}/", mode: 'symlink'
+    publishDir "${params.out}/${METHOD}/${DATANAME}", mode: 'symlink'
     input:
         tuple val(DATANAME), val(METHOD), path(NPZ)
     output:
