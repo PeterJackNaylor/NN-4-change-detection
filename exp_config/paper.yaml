@@ -1,7 +1,7 @@
 out: result/paper
 path: "data/full_data/"
 extension: "ply"
-epoch: [100] #could do several epoch, but please keep this param to 1 element
+epoch: [50] #could do several epoch, but please keep this param to 1 element
 scale: [1.0, 5.0]
 fourier: ["--fourier"]
 norm: ["one_minus"]
