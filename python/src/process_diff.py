@@ -114,7 +114,7 @@ result = pd.merge(grid_pd, table1_copy, on=["X", "Y"], how="left")
 size1 = table1.X.shape[0]
 
 if size1 > 1e6:
-    factor = 10
+    factor = 100
 elif size1 > 5e5:
     factor = 5
 elif size1 > 1e5:
