@@ -8,16 +8,11 @@ import pandas as pd
 from tqdm import tqdm
 
 
-def open_npz_compute(f, OT=False):
+def open_npz_compute(f):
     file = np.load(f)
     gt = file["labels_on1"]
     th = file["thresh_bin"]
-    if OT:
-        z = file["changes"]
-        # opened_z = file["opened_changes"]
-    else:
-        z = file["z1_on1"] - file["z0_on1"]
-        # opened_z = z.copy()
+    z = file["z1_on1"] - file["z0_on1"]
     pred = np.zeros_like(z).astype(int)
     pred[z > th] = 1
     pred[z < -th] = 1
@@ -30,7 +25,6 @@ files = glob("*.npz")
 
 dataname = sys.argv[1]
 method = sys.argv[2]
-is_OT = "OT" == method[:2]
 
 diff_z, prediction, gt = [], [], []
 diff_z_opened = []
@@ -40,8 +34,7 @@ acc, pearson = [], []
 
 print("Reading files")
 for f in tqdm(files):
-    # z_f, gt_f, yhat, iou, iou_mc, z_f_opened = open_npz_compute(f, is_OT)
-    z_f, gt_f, yhat, iou, iou_mc = open_npz_compute(f, is_OT)
+    z_f, gt_f, yhat, iou, iou_mc = open_npz_compute(f)
     diff_z.append(z_f)
     prediction.append(yhat)
     gt.append(gt_f)

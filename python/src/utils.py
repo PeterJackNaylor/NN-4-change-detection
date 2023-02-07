@@ -12,7 +12,7 @@ def compute_jaccard(ytrue, yhat):
     return jaccard_bin, np.mean([jaccard_mc_1, jaccard_mc_2])
 
 
-def compute_iou(diffz, y, threshold=5):
+def compute_iou(diffz, y, threshold=None):
     best_iou, best_miou = 0, 0
     best_t, best_mt = 0, 0
     fpred, fmpred = np.zeros_like(y), np.zeros_like(y)
