@@ -96,6 +96,7 @@ process aggregate {
         py_file = file("python/src/aggregate.py")
         """
         python $py_file $DATANAME $METHOD
+
         """
 }
 

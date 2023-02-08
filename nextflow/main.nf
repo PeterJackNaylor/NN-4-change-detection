@@ -62,7 +62,6 @@ process final_table {
         py_file = file("python/src/regroup_csv.py")
         """
         python $py_file
-
         """
 }
 
