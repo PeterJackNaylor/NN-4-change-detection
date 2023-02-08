@@ -110,8 +110,8 @@ def pred_test_save(
         predictions1 = predict_loop(ds_predict1, model.eval())
         f_z1 = np.array(predictions1.cpu())
         f_z1 = f_z1 * nv[2][1] + nv[2][0]
-
-    B = np.array(B.cpu())
+    if B:
+        B = np.array(B.cpu())
     info = {
         "wd": os.getcwd(),
         "name": opt.name,

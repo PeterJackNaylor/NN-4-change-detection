@@ -37,6 +37,9 @@ def objective(opt, trial):
             p["mp_size"][1],
         )
         opt.mapping_size = int(2**mapping_size_int)
+    else:
+        opt.scale = None
+        opt.mapping_size = None
     if opt.method == "L1_diff":
         opt.lambda_t = trial.suggest_float(
             "lambda_t", p["lambda_t"][0], p["lambda_t"][1], log=True
@@ -81,7 +84,7 @@ def main():
         study_name=options.name,
         direction="minimize",
         sampler=optuna.samplers.TPESampler(),
-        pruner=optuna.pruners.MedianPruner(),
+        pruner=optuna.pruners.HyperbandPruner(),
     )
     obj = partial(objective, options)
     study.optimize(obj, n_trials=options.trials)

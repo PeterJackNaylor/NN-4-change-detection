@@ -19,18 +19,18 @@ def load_csv_weight_npz(csv_file0, csv_file1, weight, npz, name, time=-1):
         table = pd.concat([table, table1], axis=0)
     table = table.reset_index(drop=True)
 
+    four_opt = name.split("FOUR=")[1].split("__")[0].split("_")[0]
     npz = np.load(npz)
-    B = torch.tensor(npz["B"]).to("cuda")
     nv = npz["nv"]
     arch = npz["architecture"]
     act = npz["activation"]
 
-    four_opt = name.split("FOUR=")[1].split("__")[0].split("_")[0]
-
     if four_opt == "--fourier":
+        B = torch.tensor(npz["B"]).to("cuda")
         mappingsize = B.shape[0]
         input_size = mappingsize * 2
     else:
+        B = None
         input_size = 3 if time != -1 else 2
 
     model = Model(input_size, arch=arch, activation=act)

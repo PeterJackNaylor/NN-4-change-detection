@@ -21,7 +21,11 @@ def compute_iou(diffz, y, threshold=None):
         t_range = [threshold]
     else:
         std = np.std(diffz)
-        t_range = np.arange(0, diffz.max(), step=std / 10)
+        maxdiff = diffz.max()
+        if maxdiff:
+            t_range = np.arange(0, diffz.max(), step=std / 10)
+        else:
+            t_range = [0]
     for thresh in tqdm(t_range):
         y_pred = np.zeros_like(y)
         y_pred[diffz > thresh] = 1

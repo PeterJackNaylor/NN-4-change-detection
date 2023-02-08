@@ -79,6 +79,8 @@ class XYZ(Dataset):
             input_size = self.mapping_size * 2
             self.nn_input = input_size
             self.fourier_transform()
+        else:
+            self.nn_input = input_size
 
     def fourier_transform(self):
         if self.B is None:
@@ -217,7 +219,6 @@ def return_dataset(
     csv0,
     csv1=None,
     bs=2048,
-    workers=8,
     mapping_size=256,
     fourier=False,
     normalize="mean",
