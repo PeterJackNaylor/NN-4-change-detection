@@ -4,7 +4,8 @@ include { aggregate } from './pipeline_single_density.nf'
 py_file = file("python/src/optuna_trial.py")
 process two_density_estimation {
     publishDir "${params.out}/double/${NAME}/", pattern: "*.png"
-    label 'gpu'
+    label {DATANAME.contains("LyonS") ? 'largegpu' : 'gpu'}
+
     input:
         tuple val(DATANAME), path(FILE)
         each FOUR
@@ -32,7 +33,7 @@ process = file("python/src/process_diff.py")
 
 
 process post_processing {
-    label 'gpu'
+    label {DATANAME.contains("LyonS") ? 'largegpu' : 'gpu'}
     publishDir "${params.out}/double/${NAME}/", mode: 'symlink'
     input:
         tuple val(NAME), path(NPZ), path(WEIGHTS), path(FILE)
