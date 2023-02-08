@@ -2,11 +2,11 @@ configname: exp_config/paper.yaml
 out: result/paper
 path: data/full_data/
 extension: ply
-epochs: 50
+epochs: 100
 trials: 50
 norm: "one_minus"
-fourier: ["--fourier"]
 single_method: [None, L1_diff]
+fourier: ["--fourier"]
 lr: #log search
   - 1.e-5 # min
   - 1.e-1 # max
