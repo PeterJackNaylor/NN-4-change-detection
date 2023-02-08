@@ -5,8 +5,9 @@ py_file = file("python/src/optuna_trial.py")
 process two_density_estimation {
     publishDir "${params.out}/double/${NAME}/", pattern: "*.png"
     label "gpu"
-    clusterOptions  {DATANAME.contains("LyonS") ? "-jc gs-container_g1 -ac d=nvcr-pytorch-2204 -v PATH=/usr/bin:/home/pnaylor/miniconda3/bin:$PATH"}
-    input:
+    clusterOptions  {DATANAME.contains("LyonS") ? "-jc gs-container_g1 -ac d=nvcr-pytorch-2204 -v PATH=/usr/bin:/home/pnaylor/miniconda3/bin:$PATH" : 
+    "-jc gpu-container_g1 -ac d=nvcr-pytorch-2204 -v PATH=/usr/bin:/home/pnaylor/miniconda3/bin:$PATH"}   
+        input:
         tuple val(DATANAME), path(FILE)
         each FOUR
         path CONFIG
@@ -34,6 +35,8 @@ process = file("python/src/process_diff.py")
 
 process post_processing {
     label "gpu"
+    clusterOptions  {DATANAME.contains("LyonS") ? "-jc gs-container_g1 -ac d=nvcr-pytorch-2204 -v PATH=/usr/bin:/home/pnaylor/miniconda3/bin:$PATH" : 
+    "-jc gpu-container_g1 -ac d=nvcr-pytorch-2204 -v PATH=/usr/bin:/home/pnaylor/miniconda3/bin:$PATH"}   
     publishDir "${params.out}/double/${NAME}/", mode: 'symlink'
     input:
         tuple val(NAME), path(NPZ), path(WEIGHTS), path(FILE)
