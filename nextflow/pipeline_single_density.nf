@@ -5,7 +5,9 @@ py_file = file("python/src/optuna_trial.py")
 process one_density_estimation {
     publishDir "${params.out}/single/${NAME}/", pattern: "*.png"
     label "gpu"
-    clusterOptions  {DATANAME.contains("LyonS") ? "-jc gs-container_g1 -ac d=nvcr-pytorch-2204 -v PATH=/usr/bin:/home/pnaylor/miniconda3/bin:$PATH"}    input:
+    clusterOptions  {DATANAME.contains("LyonS") ? "-jc gs-container_g1 -ac d=nvcr-pytorch-2204 -v PATH=/usr/bin:/home/pnaylor/miniconda3/bin:$PATH" :
+    "-jc gpu-container_g1 -ac d=nvcr-pytorch-2204 -v PATH=/usr/bin:/home/pnaylor/miniconda3/bin:$PATH"}
+    input:
         tuple val(DATANAME), file(FILE0), file(FILE1)
         each FOUR
         each METHOD
@@ -50,7 +52,9 @@ process = file("python/src/process_diff.py")
 
 process post_processing {
     label "gpu"
-    clusterOptions  {DATANAME.contains("LyonS") ? "-jc gs-container_g1 -ac d=nvcr-pytorch-2204 -v PATH=/usr/bin:/home/pnaylor/miniconda3/bin:$PATH"}    publishDir "${params.out}/single/${NAME}/", mode: 'symlink'
+    clusterOptions  {DATANAME.contains("LyonS") ? "-jc gs-container_g1 -ac d=nvcr-pytorch-2204 -v PATH=/usr/bin:/home/pnaylor/miniconda3/bin:$PATH" :
+    "-jc gpu-container_g1 -ac d=nvcr-pytorch-2204 -v PATH=/usr/bin:/home/pnaylor/miniconda3/bin:$PATH"}
+    publishDir "${params.out}/single/${NAME}/", mode: 'symlink'
     input:
         tuple val(NAME), path(NPZ), path(WEIGHT), path(FILE0), path(FILE1), val(METHOD)
 
