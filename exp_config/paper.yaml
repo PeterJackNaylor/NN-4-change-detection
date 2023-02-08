@@ -1,13 +1,29 @@
+configname: exp_config/paper.yaml
 out: result/paper
-path: "data/full_data/"
-extension: "ply"
-epoch: [50] #could do several epoch, but please keep this param to 1 element
-scale: [1.0, 5.0]
+path: data/full_data/
+extension: ply
+epochs: 100
+trials: 50
+norm: "one_minus"
+single_method: [None, L1_diff]
 fourier: ["--fourier"]
-norm: ["one_minus"]
-arch: ["default", "default-BN", "Vlarge"]
-lr: [0.001, 0.01, 0.1]
-mapping_size: [512, 1024]
-act: ["relu"]
-wd: ["0.0001"]
-lambda_t: [0.0, 0.01, 1.0, 10.]
+lr: #log search
+  - 1.e-5 # min
+  - 1.e-1 # max
+wd: #log search
+  - 1.e-5 # min
+  - 1.e+1 # max
+bs: # power of 2 search
+  - 9 # 512 # min
+  - 12 # 2048 # max
+scale: # power of 2 search
+  - 0 # min
+  - 5 # max
+mapping_size: # power of 2 search
+  - 7 # min
+  - 10 # max
+lambda_t: #log search
+  - 1.e-5 # min
+  - 1.e+1 # max
+act: [tanh, relu]
+arch: [default, default-BN, Vlarge]

@@ -42,10 +42,10 @@ if double == "double":
         name1 = n0
     time = time0 = time1 = -1
 
-    table0, model0, B0, nv0 = load_csv_weight_npz(
+    table0, model0, B0, nv0, fourier = load_csv_weight_npz(
         csvfile0, None, w0_file, npz_0, name0, time
     )
-    table1, model1, B1, nv1 = load_csv_weight_npz(
+    table1, model1, B1, nv1, fourier = load_csv_weight_npz(
         csvfile1, None, w1_file, npz_1, name1, time
     )
 else:
@@ -61,7 +61,7 @@ else:
     dataname = weight.split("__")[0]
     name = weight.split(".p")[0]
 
-    table, model, B, nv = load_csv_weight_npz(
+    table, model, B, nv, fourier = load_csv_weight_npz(
         csvfile0, csvfile1, weight, npz, name, time
     )
     table0 = table[table["T"] == 0]
@@ -82,13 +82,13 @@ grid_indices = define_grid(table0, table1, step=2)
 xy_grid = grid_indices.copy()  # .astype("float32")
 xy_onz1 = table1[["X", "Y"]].values  # .astype("float32")
 
-z0_on1 = predict_z(model0, B0, nv0, xy_onz1, time=time0)
-z1_on1 = predict_z(model1, B1, nv1, xy_onz1, time=time1)
+z0_on1 = predict_z(model0, B0, nv0, xy_onz1, fourier, time=time0)
+z1_on1 = predict_z(model1, B1, nv1, xy_onz1, fourier, time=time1)
 
 diff_z_on1 = z1_on1 - z0_on1
 
-z0_ongrid = predict_z(model0, B0, nv0, xy_grid, time=time0)
-z1_ongrid = predict_z(model1, B1, nv1, xy_grid, time=time1)
+z0_ongrid = predict_z(model0, B0, nv0, xy_grid, fourier, time=time0)
+z1_ongrid = predict_z(model1, B1, nv1, xy_grid, fourier, time=time1)
 
 
 diff_z = z1_ongrid - z0_ongrid
