@@ -1,91 +1,71 @@
 
 
-py_file = file("python/src/main.py")
+py_file = file("python/src/optuna_trial.py")
 
 process one_density_estimation {
+    publishDir "${params.out}/single/${NAME}/", pattern: "*.png"
     label 'gpu'
     input:
         tuple val(DATANAME), file(FILE0), file(FILE1)
-        each SCALE
         each FOUR
-        each MAPPINGSIZE
-        each NORM
-        each ARCH
-        each LR
-        each WD
-        each LAMBDA_T
-        each ACT
-        each EPOCH
+        each METHOD
+        path CONFIG
 
     output:
-        path("$NAME" + ".csv")
-        tuple val(NAME), val(DATANAME), path("$NAME" + ".npz"), path("$NAME" + ".pth"), path(FILE0), path(FILE1)
-        tuple path("$NAME" + "0.png"), path("$NAME" + "1.png")
+        // path("$NAME" + ".csv")
+        tuple val(NAME), path("$NAME" + ".npz"), path("$NAME" + ".pth"), path(FILE0), path(FILE1), val(METHOD)
+        path("$NAME" + "*.png")
 
     script:
-        DATA = FILE0.baseName.split("-")[0]
-        if (LAMBDA_T == 0.0){
-            postfix = "single"
-        }else{
-            postfix = "singleRegulated"
-        }
-        NAME = "${DATA}__SCALE=${SCALE}__FOUR=${FOUR}__NORM=${NORM}__ARCH=${ARCH}__LR=${LR}__WD=${WD}__ACT=${ACT}__MAPPINGSIZE=${MAPPINGSIZE}__REGUL=${LAMBDA_T}_${postfix}"
+        NAME = "${DATANAME}__FOUR=${FOUR}__METHOD=${METHOD}"
         """
         python $py_file \
             --csv0 $FILE0 \
             --csv1 $FILE1 \
-            --epochs $EPOCH \
-            --scale $SCALE \
-            --mapping_size $MAPPINGSIZE \
             $FOUR \
-            --normalize $NORM \
-            --arch $ARCH\
-            --lr $LR \
-            --wd $WD \
-            --lambda_t ${LAMBDA_T} \
-            --activation $ACT \
             --name $NAME \
-            --workers 8
+            --yaml_file $CONFIG
+
         """
 }
 
 
-pyselect = file("python/src/selectbest.py")
-process selection {
-    publishDir "${params.out}/single/selection", mode: 'symlink'
-    input:
-        path(CSV)
+// pyselect = file("python/src/selectbest.py")
+// process selection {
+//     publishDir "${params.out}/single/selection", mode: 'symlink'
+//     input:
+//         path(CSV)
 
-    output:
-        path("selected.csv")
-        path(CSV)
-    script:
-        """
-        python $pyselect $CSV
-        """
-}
+//     output:
+//         path("selected.csv")
+//         path(CSV)
+//     script:
+//         """
+//         python $pyselect $CSV
+//         """
+// }
 
 process = file("python/src/process_diff.py")
 
 
 process post_processing {
     label 'gpu'
-    publishDir "${params.out}/single/${DATANAMES}/", mode: 'symlink'
+    publishDir "${params.out}/single/${NAME}/", mode: 'symlink'
     input:
-        tuple val(NAMES), val(DATANAMES), path(NPZ), path(WEIGHTS), path(FILE0), path(FILE1), val(CHUNK_ID), val(METHOD)
+        tuple val(NAME), path(NPZ), path(WEIGHT), path(FILE0), path(FILE1), val(METHOD)
 
     output:
-        tuple val(DATANAMES), val(METHOD), path("*${DATANAMES}*_results.npz")
+        tuple val(NAME), val("$METHOD"), path("${METHOD}*_results.npz")
         path("*.png")
     script:
         """
-        python $process ${METHOD} ${WEIGHTS} ${FILE0} ${FILE1} ${NPZ}
+        python $process ${METHOD} ${WEIGHT} ${FILE0} ${FILE1} ${NPZ}
         """
 }
 
 
 process aggregate {
-    publishDir "${params.out}/${METHOD}/${DATANAME}", mode: 'symlink'
+    publishDir "${params.out}/${METHOD}", mode: 'symlink'
     input:
         tuple val(DATANAME), val(METHOD), path(NPZ)
     output:
@@ -99,40 +79,26 @@ process aggregate {
         """
 }
 
-data = Channel.fromFilePairs("LyonN4/*{0,1}.txt")
-scale = [0.5] //0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0]
+data = Channel.fromFilePairs("data/clippeddata/*{0,1}.txt")
 fourier = ["--fourier"]
-norm = ["one_minus"]
-lr = [0.1] //0.0001, 0.001, 0.01, 0.1, 1.0]
-act = ["relu"]
-
+method = ["None", "L1_diff"]
+config = Channel.fromPath("exp_config/home.yaml")
 
 workflow one_density {
     take:
         paired_data
-        scale
         fourier
-        mapping_size
-        norm
-        arch
-        lr
-        wd
-        lambda_t
-        act
-        epoch
+        method
+        config
+
     main:
-        one_density_estimation(paired_data, scale, fourier, mapping_size, norm, arch, lr, wd, lambda_t, act, epoch)
-        one_density_estimation.out[0].collectFile(name:"together.csv", keepHeader: true, skip:1).set{training_scores}
-        selection(training_scores)
-        selection.out[0] .splitCsv(skip:1, sep: ',')
-            .set{selected}
-        one_density_estimation.out[1].join(selected, by: 0).set{fused}
-        post_processing(fused)
+        one_density_estimation(paired_data, fourier, method, config)
+        post_processing(one_density_estimation.out[0])
         aggregate(post_processing.out[0].groupTuple(by: [0, 1]))
     emit:
         aggregate.out[0]
 }
 
 workflow {
-    one_density(data, scale, fourier, norm, lr, act)
+    one_density(data, fourier, method)
 }

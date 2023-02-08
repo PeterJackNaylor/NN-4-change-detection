@@ -3,17 +3,9 @@ include { two_density } from './pipeline_double_density.nf'
 include { one_density } from './pipeline_single_density.nf'
 
 // NeRF Parameters
-scale = params.scale
 fourier = params.fourier
-norm = params.norm
-lr = params.lr
-mapping_size = params.mapping_size
-act = params.act
-epoch = params.epoch
-arch = params.arch
-wd = params.wd
-lambda_t = params.lambda_t
-
+method = params.single_method
+config = file(params.configname)
 // Chunk Parameters
 ext = params.extension
 
@@ -79,8 +71,9 @@ workflow {
             append_columns_headers.out.set{pairedPointsclouds}
             pairedPointsclouds.map{it -> [[it[0], it[1]], [it[0], it[2]]]}.flatten().buffer(size: 2).set{pointClouds}
         }
-        two_density(pointClouds, scale, fourier, mapping_size, norm, arch, lr, wd, act, epoch)
-        one_density(pairedPointsclouds, scale, fourier, mapping_size, norm, arch, lr, wd, lambda_t, act, epoch)
+
+        two_density(pointClouds, fourier, config)
+        one_density(pairedPointsclouds, fourier, method, config)
         two_density.out.concat(one_density.out).collect().set{results}
         final_table(results)
 }
