@@ -254,7 +254,7 @@ def return_dataset(
         B=B,
         normalize=normalize,
         nv=nv,
-        time=time,
+        time=   time,
     )
     while xyz_train.table.shape[0] < bs:
         bs = bs // 2
@@ -267,7 +267,7 @@ def return_dataset(
         drop_last=True,
     )
     while xyz_test.table.shape[0] < bs:
-        bs = bs // 2
+        bs = bs // 2    
     test_loader = DataLoader(
         xyz_test,
         batch_size=bs,
