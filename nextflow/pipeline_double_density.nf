@@ -35,6 +35,7 @@ process post_processing {
     publishDir "${params.out}/double/${NAME}/", mode: 'symlink'
     input:
         tuple val(NAME), path(NPZ), path(WEIGHTS), path(FILE)
+        path CONFIG
 
     output:
         tuple val(NAME), val("double"), path("double*_results.npz")
@@ -42,7 +43,7 @@ process post_processing {
 
     script:
         """
-        python $process double ${WEIGHTS[0]} ${WEIGHTS[1]} ${FILE[0]} ${FILE[1]} ${NPZ[0]} ${NPZ[1]}
+        python $process double ${WEIGHTS[0]} ${WEIGHTS[1]} ${FILE[0]} ${FILE[1]} ${NPZ[0]} ${NPZ[1]} ${CONFIG}
         """
 }
 
@@ -55,7 +56,7 @@ workflow two_density {
     main:
         two_density_estimation(data, fourier, config)
         two_density_estimation.out[0].groupTuple().set{fused}
-        post_processing(fused)
+        post_processing(fused, config)
         aggregate(post_processing.out[0].groupTuple(by: [0, 1]))
     emit:
         aggregate.out[0]

@@ -12,6 +12,8 @@ results
 *.csv
 *.npz
 .vscode/
+python/src/old/
+python/plots/__pycache__/
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,r,jupyternotebooks,macos,linux
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,r,jupyternotebooks,macos,linux

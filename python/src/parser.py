@@ -6,6 +6,7 @@ def read_yaml(file):
     f = open(file)
     param_grid = yaml.load(f, Loader=yaml.Loader)
     res = {
+        "norm": param_grid["norm"],
         "lr": param_grid["lr"],
         "wd": param_grid["wd"],
         "bs": param_grid["bs"],

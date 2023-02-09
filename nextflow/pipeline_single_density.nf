@@ -38,13 +38,13 @@ process post_processing {
     publishDir "${params.out}/single/${NAME}/", mode: 'symlink'
     input:
         tuple val(NAME), path(NPZ), path(WEIGHT), path(FILE0), path(FILE1), val(METHOD)
-
+        path CONFIG
     output:
         tuple val(NAME), val("$METHOD"), path("${METHOD}*_results.npz")
         path("*.png")
     script:
         """
-        python $process ${METHOD} ${WEIGHT} ${FILE0} ${FILE1} ${NPZ}
+        python $process ${METHOD} ${WEIGHT} ${FILE0} ${FILE1} ${NPZ} ${CONFIG}
         """
 }
 
@@ -79,7 +79,7 @@ workflow one_density {
 
     main:
         one_density_estimation(paired_data, fourier, method, config)
-        post_processing(one_density_estimation.out[0])
+        post_processing(one_density_estimation.out[0], config)
         aggregate(post_processing.out[0].groupTuple(by: [0, 1]))
     emit:
         aggregate.out[0]
