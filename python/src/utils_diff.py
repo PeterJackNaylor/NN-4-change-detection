@@ -28,7 +28,7 @@ def load_csv_weight_npz(csv_file0, csv_file1, weight, npz, name, time=-1):
 
     input_size = 3 if time != -1 else 2
 
-    if four_opt == four_opt:
+    if four_opt:
         B = torch.tensor(npz["B"]).to("cuda")
     else:
         B = None
