@@ -108,12 +108,13 @@ def estimate_density(
             elif epoch - best_epoch > 20:
                 for g in optimizer.param_groups:
                     g["lr"] = g["lr"] / 10
-                    # Add prune mechanism
+        # Add prune mechanism
         if trial:
             trial.report(lmse, epoch)
 
             if trial.should_prune():
                 raise optuna.exceptions.TrialPruned()
+
     if return_model:
         model.load_state_dict(torch.load(name))
         return model, best_test_score

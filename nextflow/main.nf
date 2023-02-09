@@ -11,7 +11,6 @@ ext = params.extension
 
 // Data
 paired_ply = Channel.fromFilePairs(params.path + "*{0,1}.ply")
-// paired_ply = Channel.fromFilePairs("data/LyonS/*{0,1}.ply")
 paired_txt = Channel.fromFilePairs(params.path + "{0,1}.txt")
 
 process from_ply_to_txt {
