@@ -23,12 +23,8 @@ class XYZ(Dataset):
         csv_file1,
         train_fold=False,
         train_fraction=0.8,
-        fourier=False,
         seed=42,
         pred_type="table_predictions",
-        scale=1.0,
-        mapping_size=256,
-        B=None,
         nv=None,
         normalize="mean",
         time=False,
@@ -63,10 +59,6 @@ class XYZ(Dataset):
         if normalize:
             self.normalize(normalize)
 
-        self.fourier = fourier
-        self.mapping_size = mapping_size
-        self.scale = scale
-        self.B = B
         input_size = 3 if self.time else 2
         self.input_size = input_size
 
@@ -74,13 +66,6 @@ class XYZ(Dataset):
         if self.need_target:
             self.targets = torch.tensor(self.targets)
         self.send_cuda()
-
-        if self.fourier:
-            input_size = self.mapping_size * 2
-            self.nn_input = input_size
-            self.fourier_transform()
-        else:
-            self.nn_input = input_size
 
     def fourier_transform(self):
         if self.B is None:
@@ -189,8 +174,6 @@ def return_dataset_prediction(
     csv0,
     csv1,
     bs=2048,
-    fourier=False,
-    B=None,
     normalize="mean",
     nv=None,
     time=0,
@@ -199,8 +182,6 @@ def return_dataset_prediction(
         csv0,
         csv1,
         pred_type="grid_predictions",
-        fourier=fourier,
-        B=B,
         nv=nv,
         time=time,
         normalize=normalize,
@@ -219,10 +200,7 @@ def return_dataset(
     csv0,
     csv1=None,
     bs=2048,
-    mapping_size=256,
-    fourier=False,
     normalize="mean",
-    scale=1.0,
     time=False,
     method="None",
 ):
@@ -231,30 +209,23 @@ def return_dataset(
         csv1,
         train_fold=True,
         train_fraction=0.8,
-        fourier=fourier,
+        # fourier=fourier,
         seed=42,
         pred_type="table_predictions",
-        scale=scale,
-        mapping_size=mapping_size,
-        B=None,
         nv=None,
         normalize=normalize,
         time=time,
         method=method,
     )
     nv = xyz_train.nv
-    B = xyz_train.B if fourier else None
+
     xyz_test = XYZ(
         csv0,
         csv1,
         train_fold=False,
         train_fraction=0.8,
-        fourier=fourier,
         seed=42,
         pred_type="table_predictions",
-        scale=scale,
-        mapping_size=mapping_size,
-        B=B,
         nv=nv,
         normalize=normalize,
         time=time,
@@ -278,5 +249,5 @@ def return_dataset(
         num_workers=0,
         drop_last=True,
     )
-    train_loader.nn_input = xyz_train.nn_input
-    return train_loader, test_loader, B, nv
+    train_loader.input_size = xyz_train.input_size
+    return train_loader, test_loader, nv

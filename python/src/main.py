@@ -6,7 +6,7 @@ from function_estimation import (
 )
 from parser import parser_f
 from data_XYZ import return_dataset, return_dataset_prediction
-from architectures import Model
+from architectures import Model, gen_b
 from plotpoint import fig_3d  # plot_surface, plot_tri_grid
 import os
 
@@ -15,7 +15,14 @@ def main():
     opt = parser_f()
 
     time = 0 if opt.csv1 else -1
-
+    opt.bs = 2048
+    opt.mapping_size = 512
+    opt.scale = 1
+    opt.architecture = "Vlarge"
+    opt.activation = "relu"
+    opt.lr = 0.01
+    opt.wd = 0.005
+    opt.lambda_t = 0.01
     model, B, nv, best_score = train_and_test(
         time,
         opt,
@@ -31,24 +38,27 @@ def train_and_test(
     return_model=True,
 ):
 
-    train, test, B, nv = return_dataset(
+    train, test, nv = return_dataset(
         opt.csv0,
         opt.csv1,
         bs=opt.bs,
-        mapping_size=opt.mapping_size,
-        fourier=opt.fourier,
         normalize=opt.normalize,
-        scale=opt.scale,
         time=not time,
         method=opt.method,
     )
+    if opt.fourier:
+        B = gen_b(opt.mapping_size, opt.scale, train.input_size)
+    else:
+        B = None
 
     model = Model(
-        train.nn_input,
+        train.input_size,
         arch=opt.architecture,
         activation=opt.activation,
+        B=B,
+        fourier=opt.fourier,
     )
-    # model = model.float()
+
     model = model.cuda()
     hp = {"lr": opt.lr, "epoch": opt.epochs, "wd": opt.wd}
     outputs = estimate_density(
@@ -82,8 +92,6 @@ def pred_test_save(
         opt.csv0,
         opt.csv1,
         bs=opt.bs,
-        fourier=opt.fourier,
-        B=B,
         nv=nv,
         time=time,
     )
@@ -101,8 +109,6 @@ def pred_test_save(
             opt.csv0,
             opt.csv1,
             bs=opt.bs,
-            fourier=opt.fourier,
-            B=B,
             nv=nv,
             time=1,
         )
@@ -110,7 +116,7 @@ def pred_test_save(
         predictions1 = predict_loop(ds_predict1, model.eval())
         f_z1 = np.array(predictions1.cpu())
         f_z1 = f_z1 * nv[2][1] + nv[2][0]
-    if B:
+    if B is not None:
         B = np.array(B.cpu())
     info = {
         "wd": os.getcwd(),
