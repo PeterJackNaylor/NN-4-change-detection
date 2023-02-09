@@ -2,10 +2,15 @@ import sys
 import numpy as np
 from utils_diff import load_csv_weight_npz, define_grid, predict_z
 from utils import compute_iou
-from plotpoint import fig_3d
+from plotpoint import scatter2d, twod_distribution
 import pandas as pd
+from parser import read_yaml
 
+
+yaml_file = read_yaml(sys.argv[-1])
+normalize = yaml_file["norm"]
 double = sys.argv[1]
+
 if double == "double":
     weight0 = sys.argv[2]
     weight1 = sys.argv[3]
@@ -42,10 +47,10 @@ if double == "double":
         name1 = n0
     time = time0 = time1 = -1
 
-    table0, model0, B0, nv0, fourier = load_csv_weight_npz(
+    table0, model0, nv0 = load_csv_weight_npz(
         csvfile0, None, w0_file, npz_0, name0, time
     )
-    table1, model1, B1, nv1, fourier = load_csv_weight_npz(
+    table1, model1, nv1 = load_csv_weight_npz(
         csvfile1, None, w1_file, npz_1, name1, time
     )
 else:
@@ -61,13 +66,17 @@ else:
     dataname = weight.split("__")[0]
     name = weight.split(".p")[0]
 
-    table, model, B, nv, fourier = load_csv_weight_npz(
-        csvfile0, csvfile1, weight, npz, name, time
+    table, model, nv = load_csv_weight_npz(
+        csvfile0,
+        csvfile1,
+        weight,
+        npz,
+        name,
+        time,
     )
     table0 = table[table["T"] == 0]
     table1 = table[table["T"] == 1]
     model0, model1 = model, model
-    B0, B1 = B, B
     nv0, nv1 = nv, nv
     time0 = 0.0
     time1 = 1.0
@@ -82,13 +91,13 @@ grid_indices = define_grid(table0, table1, step=2)
 xy_grid = grid_indices.copy()  # .astype("float32")
 xy_onz1 = table1[["X", "Y"]].values  # .astype("float32")
 
-z0_on1 = predict_z(model0, B0, nv0, xy_onz1, fourier, time=time0)
-z1_on1 = predict_z(model1, B1, nv1, xy_onz1, fourier, time=time1)
+z0_on1 = predict_z(model0, nv0, xy_onz1, normalize=normalize, time=time0)
+z1_on1 = predict_z(model1, nv1, xy_onz1, normalize=normalize, time=time1)
 
 diff_z_on1 = z1_on1 - z0_on1
 
-z0_ongrid = predict_z(model0, B0, nv0, xy_grid, fourier, time=time0)
-z1_ongrid = predict_z(model1, B1, nv1, xy_grid, fourier, time=time1)
+z0_ongrid = predict_z(model0, nv0, xy_grid, normalize=normalize, time=time0)
+z1_ongrid = predict_z(model1, nv1, xy_grid, normalize=normalize, time=time1)
 
 
 diff_z = z1_ongrid - z0_ongrid
@@ -131,7 +140,7 @@ np.random.shuffle(idx)
 idx = idx[: size1 // factor]
 
 sub_X = table1.X.values[idx]
-sub_Y = table1.X.values[idx]
+sub_Y = table1.Y.values[idx]
 sub_Z = table1.Z.values[idx]
 sub_diff_z_on1 = diff_z_on1[idx]
 sub_y_on1 = y_on1[idx]
@@ -139,34 +148,76 @@ sub_z1_on1 = z1_on1[idx]
 sub_z0_on1 = z0_on1[idx]
 sub_pred_mc = pred_mc[idx]
 
-fig = fig_3d(sub_X, sub_Y, sub_diff_z_on1, sub_y_on1)
-name_png = f"diff_{dataname}_labels_on_z1.png"
+
+fig = twod_distribution(diff_z_on1)
+name_png = f"{dataname}_diffZ1_distribution.png"
 fig.write_image(name_png)
 
-fig = fig_3d(sub_X, sub_Y, sub_diff_z_on1, sub_pred_mc)
-name_png = f"diff_{dataname}_pred_on_z1.png"
-fig.write_image(name_png)
-
-fig = fig_3d(sub_X, sub_Y, sub_Z, sub_pred_mc)
-name_png = f"{dataname}_z1_on_z1.png"
-fig.write_image(name_png)
-
-fig = fig_3d(table1.X, table1.Y, sub_z1_on1, sub_pred_mc)
-name_png = f"{dataname}_predz1_on_z1.png"
-fig.write_image(name_png)
-
-fig = fig_3d(table1.X, table1.Y, sub_z0_on1, sub_pred_mc)
-name_png = f"{dataname}_predz0_on_z1.png"
+fig = twod_distribution(diff_z_on1, y_on1)
+name_png = f"{dataname}_diffZ1_distribution_by_label.png"
 fig.write_image(name_png)
 
 
-fig = fig_3d(grid_indices[:, 0], grid_indices[:, 1], diff_z, result.label)
-name_png = f"diff_{dataname}_labels.png"
+name_png = f"{dataname}_diffZ1.png"
+fig = scatter2d(sub_X, sub_Y, sub_diff_z_on1)
 fig.write_image(name_png)
 
-fig = fig_3d(grid_indices[:, 0], grid_indices[:, 1], diff_z, diff_z)
-name_png = f"diff_{dataname}.png"
+name_png = f"{dataname}_diffZ1_and_label.png"
+fig = scatter2d(sub_X, sub_Y, sub_diff_z_on1, sub_y_on1)
 fig.write_image(name_png)
+
+name_png = f"{dataname}_diffZ1_and_prediction.png"
+fig = scatter2d(sub_X, sub_Y, sub_diff_z_on1, sub_pred_mc)
+fig.write_image(name_png)
+
+
+fig = scatter2d(sub_X, sub_Y, sub_Z)
+name_png = f"{dataname}_Z1.png"
+fig.write_image(name_png)
+
+fig = scatter2d(sub_X, sub_Y, sub_Z, sub_pred_mc)
+name_png = f"{dataname}_Z1_and_prediction.png"
+fig.write_image(name_png)
+
+fig = scatter2d(sub_X, sub_Y, sub_Z, sub_y_on1)
+name_png = f"{dataname}_Z1_and_label.png"
+fig.write_image(name_png)
+
+fig = scatter2d(sub_X, sub_Y, sub_z1_on1)
+name_png = f"{dataname}_predictionZ1.png"
+fig.write_image(name_png)
+
+fig = scatter2d(sub_X, sub_Y, sub_z1_on1, sub_pred_mc)
+name_png = f"{dataname}_predictionZ1_and_prediction.png"
+fig.write_image(name_png)
+
+fig = scatter2d(sub_X, sub_Y, sub_z1_on1, sub_y_on1)
+name_png = f"{dataname}_predictionZ1_and_label.png"
+fig.write_image(name_png)
+
+
+fig = scatter2d(sub_X, sub_Y, sub_z0_on1)
+name_png = f"{dataname}_predictionZ0.png"
+fig.write_image(name_png)
+
+fig = scatter2d(sub_X, sub_Y, sub_z0_on1, sub_pred_mc)
+name_png = f"{dataname}_predictionZ0_and_prediction.png"
+fig.write_image(name_png)
+
+fig = scatter2d(sub_X, sub_Y, sub_z0_on1, sub_y_on1)
+name_png = f"{dataname}_predictionZ0_and_label.png"
+fig.write_image(name_png)
+
+
+# fig = fig_3d(grid_indices[:, 0], grid_indices[:, 1], diff_z, result.label)
+fig = scatter2d(grid_indices[:, 0], grid_indices[:, 1], diff_z)
+name_png = f"{dataname}_Grid_diffZ1.png"
+fig.write_image(name_png)
+
+fig = scatter2d(grid_indices[:, 0], grid_indices[:, 1], diff_z, result.label)
+name_png = f"{dataname}_Grid_diffZ1_and_label.png"
+fig.write_image(name_png)
+
 
 # compute IoU
 

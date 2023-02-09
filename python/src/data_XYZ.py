@@ -4,16 +4,16 @@ import pandas as pd
 
 from torch.utils.data import Dataset, DataLoader
 
-pi = torch.pi
+# pi = torch.pi
 
 
-# Fourier feature mapping
-def input_mapping(x, B):
-    if B is None:
-        return x
-    else:
-        x_proj = torch.matmul((2.0 * pi * x), B.T)
-        return torch.cat([torch.sin(x_proj), torch.cos(x_proj)], axis=-1)
+# # Fourier feature mapping
+# def input_mapping(x, B):
+#     if B is None:
+#         return x
+#     else:
+#         x_proj = torch.matmul((2.0 * pi * x), B.T)
+#         return torch.cat([torch.sin(x_proj), torch.cos(x_proj)], axis=-1)
 
 
 class XYZ(Dataset):
@@ -25,6 +25,7 @@ class XYZ(Dataset):
         train_fraction=0.8,
         seed=42,
         pred_type="table_predictions",
+        step_grid=2,
         nv=None,
         normalize="mean",
         time=False,
@@ -37,6 +38,14 @@ class XYZ(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
+        self.time = time
+        self.need_inverse_time = method == "L1_diff"
+        self.need_target = not pred_type == "grid_predictions"
+        self.nv = nv
+        input_size = 3 if self.time else 2
+        self.input_size = input_size
+        self.step_grid = step_grid
+
         table = self.read_table(csv_file0, 0)
 
         if csv_file1:
@@ -44,9 +53,6 @@ class XYZ(Dataset):
             table = pd.concat([table, table1], axis=0)
         table = table.reset_index(drop=True)
 
-        self.time = time
-        self.need_inverse_time = method == "L1_diff"
-        self.need_target = not pred_type == "grid_predictions"
         if pred_type == "table_predictions":
             self.setup_table_sample(table)
             self.split_train(seed, train_fraction, train_fold)
@@ -54,28 +60,23 @@ class XYZ(Dataset):
         elif pred_type == "grid_predictions":
             self.setup_uniform_grid(table)
 
-        self.nv = nv
-
         if normalize:
             self.normalize(normalize)
-
-        input_size = 3 if self.time else 2
-        self.input_size = input_size
 
         self.samples = torch.tensor(self.samples).float()
         if self.need_target:
             self.targets = torch.tensor(self.targets)
         self.send_cuda()
 
-    def fourier_transform(self):
-        if self.B is None:
-            shape = (self.mapping_size, self.input_size)
-            B = np.random.normal(size=shape).astype(np.float32)
-            B = torch.tensor(B).to("cuda")
-            self.B = B * self.scale
-        self.samples = input_mapping(self.samples, self.B)
-        if self.need_inverse_time:
-            self.samples_t = self.fourier_transform(self.samples_t)
+    # def fourier_transform(self):
+    #     if self.B is None:
+    #         shape = (self.mapping_size, self.input_size)
+    #         B = np.random.normal(size=shape).astype(np.float32)
+    #         B = torch.tensor(B).to("cuda")
+    #         self.B = B * self.scale
+    #     self.samples = input_mapping(self.samples, self.B)
+    #     if self.need_inverse_time:
+    #         self.samples_t = self.fourier_transform(self.samples_t)
 
     def send_cuda(self):
         self.samples = self.samples.to("cuda")
@@ -141,8 +142,8 @@ class XYZ(Dataset):
         ymin = int(table.Y.min())
 
         xx, yy = np.meshgrid(
-            np.arange(xmin, xmax, 2),
-            np.arange(ymin, ymax, 2),
+            np.arange(xmin, xmax, self.step_grid),
+            np.arange(ymin, ymax, self.step_grid),
         )
         xx = xx.astype(float)
         yy = yy.astype(float)
@@ -168,6 +169,32 @@ class XYZ(Dataset):
             return sample, sample_t, target
         else:
             return sample, target
+
+
+class XYZ_predefinedgrid(XYZ):
+    def __init__(self, grid, nv=None, normalize="mean", time=False):
+
+        self.time = time
+        self.need_inverse_time = False
+        self.need_target = False
+        self.nv = nv
+        input_size = 3 if self.time else 2
+        self.input_size = input_size
+
+        self.setup_uniform_grid(grid)
+
+        if normalize:
+            self.normalize(normalize)
+
+        self.samples = torch.tensor(self.samples).float()
+        self.send_cuda()
+
+    def setup_uniform_grid(self, grid):
+        if self.time == -1:
+            self.samples = grid
+        else:
+            time = np.zeros_like(grid[:, 0]) + self.time
+            self.samples = np.concatenate([grid, time[:, np.newaxis]], axis=1)
 
 
 def return_dataset_prediction(
@@ -209,7 +236,6 @@ def return_dataset(
         csv1,
         train_fold=True,
         train_fraction=0.8,
-        # fourier=fourier,
         seed=42,
         pred_type="table_predictions",
         nv=None,

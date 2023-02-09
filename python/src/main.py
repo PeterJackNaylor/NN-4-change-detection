@@ -7,7 +7,7 @@ from function_estimation import (
 from parser import parser_f
 from data_XYZ import return_dataset, return_dataset_prediction
 from architectures import Model, gen_b
-from plotpoint import fig_3d  # plot_surface, plot_tri_grid
+from plotpoint import scatter2d  # plot_surface, plot_tri_grid
 import os
 
 
@@ -129,7 +129,8 @@ def pred_test_save(
         png_snap0 = opt.name + "0.png"
         png_snap1 = opt.name + "1.png"
 
-        fig = fig_3d(x, y, f_z1, f_z1)
+        # fig = fig_3d(x, y, f_z1, f_z1)
+        fig = scatter2d(x, y, f_z1)
         fig.write_image(png_snap1)
         np.savez(
             opt.name + ".npz",
@@ -156,8 +157,8 @@ def pred_test_save(
             architecture=opt.architecture,
             activation=opt.activation,
         )
-
-    fig = fig_3d(x, y, f_z0, f_z0)
+    fig = scatter2d(x, y, f_z0)
+    # fig = fig_3d(x, y, f_z0, f_z0)
     fig.write_image(png_snap0)
 
 
