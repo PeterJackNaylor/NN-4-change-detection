@@ -2,8 +2,8 @@ configname: exp_config/home.yaml
 out: result/home
 path: data/clippeddata/clippedMarco
 extension: txt
-epochs: 40
-trials: 10
+epochs: 50
+trials: 50
 norm: "one_minus"
 single_method: [None, L1_diff]
 fourier: [--fourier]
@@ -15,13 +15,13 @@ wd: #log search
   - 1.e+1 # max
 bs: # power of 2 search
   - 9 # 512 # min
-  - 12 # 2048 # max
+  - 13 # 2048 # max
 scale: # power of 2 search
   - 0 # min
-  - 5 # max
+  - 6 # max
 mapping_size: # power of 2 search
   - 7 # min
-  - 10 # max
+  - 11 # max
 lambda_t: #log search
   - 1.e-5 # min
   - 1.e+1 # max

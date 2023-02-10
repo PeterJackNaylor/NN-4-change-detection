@@ -11,7 +11,7 @@ process two_density_estimation {
 
     output:
         tuple val(NAME),  path("$FNAME" + ".npz"), path("$FNAME" + ".pth"), path(FILE)
-        path("$FNAME" + ".png")
+        path("$FNAME" + "*.png")
 
     script:
         NAME = "${DATANAME}__FOUR=${FOUR}_double"
