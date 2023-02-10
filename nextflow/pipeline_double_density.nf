@@ -1,10 +1,9 @@
 
-// include { aggregate } from './pipeline_single_density.nf'
-
 py_file = file("python/src/optuna_trial.py")
 process two_density_estimation {
     publishDir "${params.out}/double/${NAME}/", pattern: "*.png"
     label "gpu"
+
     input:
         tuple val(DATANAME), path(FILE)
         each FOUR
@@ -29,10 +28,10 @@ process two_density_estimation {
 
 process = file("python/src/process_diff.py")
 
-
 process post_processing {
     label "gpu"
     publishDir "${params.out}/double/${NAME}/", mode: 'symlink'
+
     input:
         tuple val(NAME), path(NPZ), path(WEIGHTS), path(FILE)
         path CONFIG
@@ -40,14 +39,12 @@ process post_processing {
     output:
         path("*.csv")
         path("*.png")
-        // tuple val(NAME), val("double"), path("double*_results.npz")
 
     script:
         """
         python $process double ${WEIGHTS[0]} ${WEIGHTS[1]} ${FILE[0]} ${FILE[1]} ${NPZ[0]} ${NPZ[1]} ${CONFIG}
         """
 }
-
 
 workflow two_density {
     take:
@@ -62,11 +59,8 @@ workflow two_density {
         post_processing.out[0]
 }
 
-
 data = Channel.fromPath("LyonN4/*.txt")
 fourier = ["--fourier"]
-
-
 
 workflow {
     main:

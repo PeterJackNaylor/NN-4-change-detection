@@ -15,10 +15,13 @@ paired_ply = Channel.fromFilePairs(params.path + "*{0,1}.ply")
 paired_txt = Channel.fromFilePairs(params.path + "{0,1}.txt")
 
 process from_ply_to_txt {
+
     input:
         tuple val(key), file(paired_file)
+
     output:
         path("*{0,1}.txt")
+
     script:
         pyfile = file("python/src/opening_ply.py")
         base0 = paired_file[0].baseName
@@ -29,8 +32,10 @@ process from_ply_to_txt {
 }
 
 process append_columns_headers {
+
     input:
         tuple val(key), file(paired_file)
+
     output:
         tuple val(key), file("tmp*0.txt"), file("tmp*1.txt")
 
