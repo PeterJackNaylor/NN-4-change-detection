@@ -9,19 +9,19 @@ def scatter2d(x, y, z, color=None):
     if color is not None:
         line_opt = {
             "color": color,
-            "width": 2,
+            "width": 1,
             "colorscale": ["rgba(0,0,0,0)", "blue", "red"],
         }
     else:
         line_opt = {"width": 0}
-    layout = go.Layout(autosize=False, width=1500, height=1500)
+    layout = go.Layout(autosize=False, width=1000, height=1000)
     fig = go.Figure(
         data=go.Scattergl(
             x=x,  # non-uniform distribution
             y=y,  # zoom to see more points at the center
             mode="markers",
             marker=dict(
-                size=12,
+                size=8,
                 color=z,
                 colorscale="Viridis",
                 line=line_opt,
