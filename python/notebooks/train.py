@@ -12,7 +12,7 @@ from pathlib import Path
 print(os.getcwd())
 sys.path.append(str(Path('../src').resolve()))
 
-from implicits import SIREN, RFF
+from implicits import continuous_diff
 
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
@@ -69,19 +69,11 @@ class EarlyStopping:
         self.val_loss_min = val_loss
 
 
-class INCANT(SIREN):
-    def __init__(self, in_dim, out_dim, hidden_num, hidden_dim, feature_scales):
-        super(INCANT, self).__init__(in_dim, out_dim, hidden_num, hidden_dim, feature_scales)
+def train_siren(model, dset_train, dset_val, device, epochs,
+                learning_rate, batch_size, loss_name,
+                val_interval=10, trial=None, xy_cont=None, lam_tv=None, clip_grad=True):
 
-    # extend SIREN forward
-    def forward(self, xin):
-        return 100 * torch.tanh(super(INCANT, self).forward(xin)) + 260
-
-def train_siren(dset_train, dset_val, device, epochs,
-                learning_rate, batch_size, loss_name, hidden_num, hidden_dim, feature_space, feature_time, 
-                val_interval=10, trial=None):
-
-    print(learning_rate, batch_size, loss_name, hidden_num, hidden_dim, feature_space, feature_time)
+    print(learning_rate, batch_size, loss_name)
     # training on a subset of the full dataset
     dload_train = torch.utils.data.DataLoader(dset_train, shuffle=True, batch_size=batch_size)
     dload_val = torch.utils.data.DataLoader(dset_val, shuffle=False, batch_size=len(dset_val))
@@ -91,15 +83,7 @@ def train_siren(dset_train, dset_val, device, epochs,
         'MAE' : torch.nn.L1Loss(),    
     }
 
-    model = INCANT(
-        in_dim = 3,
-        out_dim = 1,
-        hidden_num = hidden_num,
-        hidden_dim = hidden_dim,
-        feature_scales = [feature_space, feature_space, feature_time]
-    )
-
-    early_stopping = EarlyStopping(patience=10, delta=0.01)
+    early_stopping = EarlyStopping(patience=5, delta=0.01)
 
     optim = torch.optim.Adam(lr=learning_rate, params=model.parameters())
     loss_fun = losses[loss_name]
@@ -124,11 +108,26 @@ def train_siren(dset_train, dset_val, device, epochs,
             estimated = model(coords)
             train_loss = loss_fun(estimated, reference)
 
+            if not xy_cont is None:
+                # off-grid regularization with continuous total variation norm
+                ind = torch.randint(0, xy_cont.shape[0], size=(coords.shape[0] // 2,1))
+                dz_dxy = continuous_diff(xy_cont[ind,:], model)
+                tv_norm = torch.mean(torch.abs(dz_dxy))
+                train_loss = train_loss + lam_tv * tv_norm
+                # print(train_loss, tv_norm, lam_tv * tv_norm)
+    
             optim.zero_grad()
             train_loss.backward()
+            if clip_grad:
+                if isinstance(clip_grad, bool):
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.)
+                else:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=clip_grad)
             optim.step()
+
             
             running_loss = running_loss + train_loss.item()
+
 
         # Validation
         with torch.no_grad():
@@ -141,18 +140,6 @@ def train_siren(dset_train, dset_val, device, epochs,
                 'mse' : mse
             }
             monitor_loss = mse
-
-        # fig = plt.figure(figsize=(12,4))
-        # plt.subplot(121)
-        # plt.plot(reference[0,:].detach().cpu().numpy(), label="Ref")
-        # plt.plot(estimated[0,:].detach().cpu().numpy(), label="Est")
-        # plt.legend()
-        # plt.subplot(122)
-        # plt.plot(np.log10(np.abs(np.fft.rfft(reference[0,:].detach().cpu().numpy()))), label="Ref")
-        # plt.plot(np.log10(np.abs(np.fft.rfft(estimated[0,:].detach().cpu().numpy()))), label="Est")
-        # plt.legend()
-        # plt.title(f'Epoch {epoch}')
-        # plt.show()
 
         metrics_track.append(metrics)
         loss_val_track.append(val_loss.item())
