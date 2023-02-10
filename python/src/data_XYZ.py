@@ -4,17 +4,6 @@ import pandas as pd
 
 from torch.utils.data import Dataset, DataLoader
 
-# pi = torch.pi
-
-
-# # Fourier feature mapping
-# def input_mapping(x, B):
-#     if B is None:
-#         return x
-#     else:
-#         x_proj = torch.matmul((2.0 * pi * x), B.T)
-#         return torch.cat([torch.sin(x_proj), torch.cos(x_proj)], axis=-1)
-
 
 class XYZ(Dataset):
     def __init__(
