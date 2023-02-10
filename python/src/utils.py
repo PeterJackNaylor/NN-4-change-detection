@@ -43,6 +43,10 @@ def gmm_predict(Z):
     threshold = det_threshold(Z, pred_mc_gmm)
     print(gm.means_)
     print(threshold)
+    if len(threshold) == 0:
+        threshold = [-1, 1]
+    elif len(threshold) == 1:
+        threshold.append(threshold[0] + 1)
     return pred_mc_gmm, threshold
 
 
