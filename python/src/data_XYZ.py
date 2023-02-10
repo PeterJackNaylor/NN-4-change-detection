@@ -4,17 +4,6 @@ import pandas as pd
 
 from torch.utils.data import Dataset, DataLoader
 
-# pi = torch.pi
-
-
-# # Fourier feature mapping
-# def input_mapping(x, B):
-#     if B is None:
-#         return x
-#     else:
-#         x_proj = torch.matmul((2.0 * pi * x), B.T)
-#         return torch.cat([torch.sin(x_proj), torch.cos(x_proj)], axis=-1)
-
 
 class XYZ(Dataset):
     def __init__(
@@ -67,16 +56,6 @@ class XYZ(Dataset):
         if self.need_target:
             self.targets = torch.tensor(self.targets)
         self.send_cuda()
-
-    # def fourier_transform(self):
-    #     if self.B is None:
-    #         shape = (self.mapping_size, self.input_size)
-    #         B = np.random.normal(size=shape).astype(np.float32)
-    #         B = torch.tensor(B).to("cuda")
-    #         self.B = B * self.scale
-    #     self.samples = input_mapping(self.samples, self.B)
-    #     if self.need_inverse_time:
-    #         self.samples_t = self.fourier_transform(self.samples_t)
 
     def send_cuda(self):
         self.samples = self.samples.to("cuda")

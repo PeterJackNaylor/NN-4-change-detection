@@ -36,9 +36,7 @@ def gmm_predict(Z):
         means_init=mean_init,
         precisions_init=precisions_init,
         weights_init=weights_init,
-    ).fit(
-        Z.reshape(-1, 1)
-    )  #
+    ).fit(Z.reshape(-1, 1))
     pred_mc_gmm = gm.predict(Z.reshape(-1, 1))
     pred_mc_gmm = determine_mapping_and_map(pred_mc_gmm, gm)
 
@@ -76,8 +74,8 @@ def compute_iou(diffz, y, use_gmm=False, threshold=None):
 
     if use_gmm:
         y_pred, threshold = gmm_predict(diffz)
-        threshold[0] -= 1
-        threshold[1] += 1
+        # threshold[0] -= 1
+        # threshold[1] += 1
         y_pred, miou = iou(y, diffz, threshold)
         return miou, threshold, y_pred
 
@@ -121,3 +119,7 @@ def compute_auc_mc(diffz, y):
             diff_tmp = -diff_tmp
             scores[value] = roc_auc_score(y_tmp, diff_tmp)
     return scores
+
+
+def compute_mse(X, Y):
+    return ((X - Y) ** 2).mean()

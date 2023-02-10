@@ -1,5 +1,5 @@
 
-include { aggregate } from './pipeline_single_density.nf'
+// include { aggregate } from './pipeline_single_density.nf'
 
 py_file = file("python/src/optuna_trial.py")
 process two_density_estimation {
@@ -38,8 +38,9 @@ process post_processing {
         path CONFIG
 
     output:
-        tuple val(NAME), val("double"), path("double*_results.npz")
+        path("*.csv")
         path("*.png")
+        // tuple val(NAME), val("double"), path("double*_results.npz")
 
     script:
         """
@@ -57,9 +58,8 @@ workflow two_density {
         two_density_estimation(data, fourier, config)
         two_density_estimation.out[0].groupTuple().set{fused}
         post_processing(fused, config)
-        aggregate(post_processing.out[0].groupTuple(by: [0, 1]))
     emit:
-        aggregate.out[0]
+        post_processing.out[0]
 }
 
 

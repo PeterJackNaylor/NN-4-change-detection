@@ -3,7 +3,6 @@ import numpy as np
 import torch
 from function_estimation import predict_loop
 from data_XYZ import DataLoader, XYZ_predefinedgrid
-from math import ceil, floor
 from architectures import Model
 
 
@@ -38,20 +37,6 @@ def load_csv_weight_npz(csv_file0, csv_file1, weight, npz, name, time=-1):
     return table, model, nv
 
 
-def define_grid(table0, table1, step=2):
-    xmin = min(floor(table0.X.min()), floor(table1.X.min()))
-    xmax = max(ceil(table0.X.max()), floor(table1.X.max()))
-    ymin = min(floor(table0.Y.min()), floor(table1.Y.min()))
-    ymax = max(ceil(table0.Y.max()), floor(table1.Y.max()))
-    xr, yr = np.arange(xmin, xmax, step), np.arange(ymin, ymax, step)
-    xx, yy = np.meshgrid(xr, yr)
-
-    xx = xx.astype(float)
-    yy = yy.astype(float)
-    indices = np.vstack([xx.ravel(), yy.ravel()]).T
-    return indices
-
-
 def predict_z(model, nv, grid_indices, normalize, bs=2048, time=0):
     iterator = XYZ_predefinedgrid(
         grid_indices,
@@ -64,7 +49,6 @@ def predict_z(model, nv, grid_indices, normalize, bs=2048, time=0):
         batch_size=bs,
         shuffle=False,
         num_workers=0,
-        # pin_memory=True,
         drop_last=False,
     )
     model.eval()
