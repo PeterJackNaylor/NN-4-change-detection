@@ -68,16 +68,6 @@ class XYZ(Dataset):
             self.targets = torch.tensor(self.targets)
         self.send_cuda()
 
-    # def fourier_transform(self):
-    #     if self.B is None:
-    #         shape = (self.mapping_size, self.input_size)
-    #         B = np.random.normal(size=shape).astype(np.float32)
-    #         B = torch.tensor(B).to("cuda")
-    #         self.B = B * self.scale
-    #     self.samples = input_mapping(self.samples, self.B)
-    #     if self.need_inverse_time:
-    #         self.samples_t = self.fourier_transform(self.samples_t)
-
     def send_cuda(self):
         self.samples = self.samples.to("cuda")
         if self.need_inverse_time:

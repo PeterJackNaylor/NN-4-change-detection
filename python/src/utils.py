@@ -121,3 +121,7 @@ def compute_auc_mc(diffz, y):
             diff_tmp = -diff_tmp
             scores[value] = roc_auc_score(y_tmp, diff_tmp)
     return scores
+
+
+def compute_mse(X, Y):
+    return ((X - Y) ** 2).mean()

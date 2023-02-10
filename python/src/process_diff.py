@@ -1,16 +1,16 @@
 import sys
 import numpy as np
-from utils_diff import load_csv_weight_npz, define_grid, predict_z
-from utils import compute_iou, compute_auc_mc
+from utils_diff import load_csv_weight_npz, predict_z
+from utils import compute_iou, compute_auc_mc, compute_mse
 from plotpoint import scatter2d, twod_distribution
 from parser import read_yaml
-
+import pandas as pd
 
 yaml_file = read_yaml(sys.argv[-1])
 normalize = yaml_file["norm"]
-double = sys.argv[1]
+method = sys.argv[1]
 
-if double == "double":
+if method == "double":
     weight0 = sys.argv[2]
     weight1 = sys.argv[3]
 
@@ -52,6 +52,8 @@ if double == "double":
     table1, model1, nv1 = load_csv_weight_npz(
         csvfile1, None, w1_file, npz_1, name1, time
     )
+    four_opt = name0.split("FOUR=")[1].split("__")[0].split("_")[0]
+    four_opt = four_opt == "--fourier"
 else:
 
     weight = sys.argv[2]
@@ -79,6 +81,9 @@ else:
     nv0, nv1 = nv, nv
     time0 = 0.0
     time1 = 1.0
+    four_opt = name.split("FOUR=")[1].split("__")[0].split("_")[0]
+    four_opt = four_opt == "--fourier"
+
 
 z0_n = table0.shape[0]
 z1_n = table1.shape[0]
@@ -86,40 +91,38 @@ z1_n = table1.shape[0]
 labels_1_n = (table1["label"].astype(int).values == 1).sum()
 labels_2_n = (table1["label"].astype(int).values == 2).sum()
 
-grid_indices = define_grid(table0, table1, step=2)
-xy_grid = grid_indices.copy()  # .astype("float32")
+# grid_indices = define_grid(table0, table1, step=2)
+# xy_grid = grid_indices.copy()  # .astype("float32")
+xy_onz0 = table0[["X", "Y"]].values  # .astype("float32")
 xy_onz1 = table1[["X", "Y"]].values  # .astype("float32")
 
+z0_on0 = predict_z(model0, nv0, xy_onz0, normalize=normalize, time=time0)
 z0_on1 = predict_z(model0, nv0, xy_onz1, normalize=normalize, time=time0)
 z1_on1 = predict_z(model1, nv1, xy_onz1, normalize=normalize, time=time1)
 
 diff_z_on1 = z1_on1 - z0_on1
 
-z0_ongrid = predict_z(model0, nv0, xy_grid, normalize=normalize, time=time0)
-z1_ongrid = predict_z(model1, nv1, xy_grid, normalize=normalize, time=time1)
+# z0_ongrid = predict_z(model0, nv0, xy_grid, normalize=normalize, time=time0)
+# z1_ongrid = predict_z(model1, nv1, xy_grid, normalize=normalize, time=time1)
 
 
-diff_z = z1_ongrid - z0_ongrid
+# diff_z = z1_ongrid - z0_ongrid
 y_on1 = table1["label"].values
 # compute IoU
+
 iou_b, thresh_b, pred = compute_iou(diff_z_on1, y_on1)
 iou_gmm, thresh_gmm, pred_gmm = compute_iou(diff_z_on1, y_on1, use_gmm=True)
 
 auc_score = compute_auc_mc(diff_z_on1, y_on1)
 
+mse0 = compute_mse(z0_on0, table0[["Z"]].values[:, 0])
+mse1 = compute_mse(z1_on1, table1[["Z"]].values[:, 0])
+
 print("best threshold:", iou_b)
 print("threshold with gmm", iou_gmm)
-print(auc_score)
-# table1_copy = table1.copy()
-# table1_copy.X = table1_copy.X.round().astype("int")
-# table1_copy.Y = table1_copy.Y.round().astype("int")
-# idx = table1_copy[["X", "Y"]].drop_duplicates().index
-# table1_copy = table1_copy.loc[idx]
-
-# grid_pd = pd.DataFrame(grid_indices).astype(int)
-# grid_pd.columns = ["X", "Y"]
-# result = pd.merge(grid_pd, table1_copy, on=["X", "Y"], how="left")
-# # result.label = result.label.fill_na(0)
+print("auc_scores:", auc_score)
+print("MSE PC0:", mse0)
+print("MSE PC1:", mse1)
 
 
 size1 = table1.X.shape[0]
@@ -226,39 +229,44 @@ name_png = f"{dataname}_predictionZ0_and_label.png"
 fig.write_image(name_png)
 
 
-# # fig = fig_3d(grid_indices[:, 0], grid_indices[:, 1], diff_z, result.label)
-# fig = scatter2d(grid_indices[:, 0], grid_indices[:, 1], diff_z)
-# name_png = f"{dataname}_Grid_diffZ1.png"
-# fig.write_image(name_png)
-
-# fig = scatter2d(grid_indices[:, 0], grid_indices[:, 1], diff_z, result.label)
-# name_png = f"{dataname}_Grid_diffZ1_and_label.png"
-# fig.write_image(name_png)
-
-
 # compute IoU
 
-name_npz = f"{double}_{dataname}_results.npz"
+# name_npz = f"{double}_{dataname}_results.npz"
 
-np.savez(
-    name_npz,
-    indices=grid_indices,
-    x1=table1.X.values,
-    y1=table1.Y.values,
-    z0_on1=z0_on1,
-    z1_on1=z1_on1,
-    z0_ongrid=z0_ongrid,
-    z1_ongrid=z1_ongrid,
-    labels_on1=y_on1,
-    IoU_b=iou_b,
-    thresh_b=thresh_b,
-    IoU_gmm=iou_gmm,
-    thresh_gmm=thresh_gmm,
-    z0_n=z0_n,
-    z1_n=z1_n,
-    labels_1_n=labels_1_n,
-    labels_2_n=labels_2_n,
-    auc_score_nochange=auc_score["No change"],
-    auc_score_addition=auc_score["Addition"],
-    auc_score_deletion=auc_score["Deletion"],
-)
+# np.savez(
+#     name_npz,
+#     indices=grid_indices,
+#     x1=table1.X.values,
+#     y1=table1.Y.values,
+#     z0_on1=z0_on1,
+#     z1_on1=z1_on1,
+#     z0_ongrid=z0_ongrid,
+#     z1_ongrid=z1_ongrid,
+#     labels_on1=y_on1,
+#     z0_n=z0_n,
+#     z1_n=z1_n,
+#     labels_1_n=labels_1_n,
+#     labels_2_n=labels_2_n,
+# )
+
+name_csv = f"{method}_{dataname}_results.csv"
+
+scores = {
+    "method": method,
+    "normalize": normalize,
+    "fourrier": four_opt,
+    "IoU_gmm": iou_gmm,
+    "threshold_gmm_low": thresh_gmm[0],
+    "threshold_gmm_high": thresh_gmm[1],
+    "len(threshold_gmm)": len(thresh_gmm),
+    "IoU_best": iou_b,
+    "threshold_best_low": thresh_b[0],
+    "threshold_best_high": thresh_b[1],
+    "AUC_nochange": auc_score["No change"],
+    "AUC_addition": auc_score["Addition"],
+    "AUC_delition": auc_score["Deletion"],
+    "MSE_PC0": mse0,
+    "MSE_PC1": mse1,
+}
+
+pd.DataFrame(scores, index=[dataname]).to_csv(name_csv)

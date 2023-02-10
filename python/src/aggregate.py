@@ -11,7 +11,7 @@ from tqdm import tqdm
 def open_npz_compute(f):
     file = np.load(f)
     gt = file["labels_on1"]
-    th = file["thresh_bin"]
+    th = file["thresh_b"]
     z = file["z1_on1"] - file["z0_on1"]
     pred = np.zeros_like(z).astype(int)
     pred[z > th] = 1
@@ -64,9 +64,7 @@ tmp_table = pd.DataFrame(
     }
 )
 
-tmp_table.to_csv(
-    "{}_{}_chunkinfo.csv".format(dataname, method), index=False
-)  # testetst
+tmp_table.to_csv("{}_{}_chunkinfo.csv".format(dataname, method), index=False)
 
 
 diff_z = np.concatenate(diff_z, axis=0)

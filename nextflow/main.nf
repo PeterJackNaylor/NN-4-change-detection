@@ -2,10 +2,11 @@
 include { two_density } from './pipeline_double_density.nf'
 include { one_density } from './pipeline_single_density.nf'
 
-// NeRF Parameters
+// IFL Parameters
 fourier = params.fourier
 method = params.single_method
 config = file(params.configname)
+
 // Chunk Parameters
 ext = params.extension
 
@@ -43,21 +44,6 @@ process append_columns_headers {
 }
 
 
-process final_table {
-    publishDir "${params.out}"
-    input:
-        file(results)
-    output:
-        file("benchmark.csv")
-    script:
-        py_file = file("python/src/regroup_csv.py")
-        """
-        python $py_file
-
-        """
-}
-
-
 workflow {
     main:
         if (ext == "ply"){
@@ -73,6 +59,6 @@ workflow {
 
         two_density(pointClouds, fourier, config)
         one_density(pairedPointsclouds, fourier, method, config)
-        two_density.out.concat(one_density.out).collect().set{results}
-        final_table(results)
+
+        two_density.out.concat(one_density.out).collectFile(name: "${params.out}/benchmark.csv", skip: 1, keepHeader: true)
 }
