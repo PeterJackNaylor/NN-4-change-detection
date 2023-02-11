@@ -19,7 +19,7 @@ def predict_loop(dataloader, model):
     return preds
 
 
-def test_loop(dataloader, model, loss_fn):
+def test_loop(dataloader, model, loss_fn, verbose):
     num_batches = len(dataloader)
     test_loss = 0
 
@@ -30,8 +30,8 @@ def test_loop(dataloader, model, loss_fn):
             test_loss = test_loss + loss_fn(pred, z).item()
 
     test_loss /= num_batches
-
-    print(f"\n Test Error: \n Avg loss: {test_loss:>8f} \n")
+    if verbose:
+        print(f"Test Error: Avg loss: {test_loss:>8f}")
     return test_loss
 
 
@@ -45,6 +45,7 @@ def estimate_density(
     method="None",
     trial=None,
     return_model=True,
+    verbose=True,
 ):
     optimizer = torch.optim.Adam(
         model.parameters(),
@@ -59,10 +60,14 @@ def estimate_density(
     model.train()
     best_test_score = np.inf
     best_epoch = 0
-    for epoch in trange(1, hp["epoch"] + 1):
-
-        running_loss, total_num, train_bar = 0.0, 0, tqdm(dataset)
-        for data_tuple in train_bar:
+    if verbose:
+        e_iterator = trange(1, hp["epoch"] + 1)
+    else:
+        range(1, hp["epoch"] + 1)
+    for epoch in e_iterator:
+        train_iterator = tqdm(dataset) if verbose else dataset
+        running_loss, total_num = 0.0, 0
+        for data_tuple in train_iterator:
             # with torch.autograd.set_detect_anomaly(True):
             # with autocast(device_type='cuda', dtype=torch.float16):
 
@@ -90,19 +95,21 @@ def estimate_density(
             # scaler.step(optimizer)
             # scaler.update()
             # opti.step()
-            running_loss = running_loss + loss.item()
-            total_num = total_num + 1
-            text = "Train Epoch [{}/{}] Loss: {:.4f}".format(
-                epoch, hp["epoch"], running_loss / total_num
-            )
-            train_bar.set_description(text)
+            if verbose:
+                running_loss = running_loss + loss.item()
+                total_num = total_num + 1
+                text = "Train Epoch [{}/{}] Loss: {:.4f}".format(
+                    epoch, hp["epoch"], running_loss / total_num
+                )
+                train_iterator.set_description(text)
 
         if epoch % 10 == 0:
-            test_score = test_loop(dataset_test, model, loss_fn)
+            test_score = test_loop(dataset_test, model, loss_fn, verbose)
             if test_score < best_test_score:
                 best_test_score = test_score
                 best_epoch = epoch
-                print(f"best model is now from epoch {epoch}")
+                if verbose:
+                    print(f"best model is now from epoch {epoch}")
                 if return_model:
                     torch.save(model.state_dict(), name)
             elif epoch - best_epoch > 20:

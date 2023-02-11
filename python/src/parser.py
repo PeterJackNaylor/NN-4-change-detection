@@ -62,6 +62,7 @@ def parser_f():
     args.epochs = params["epochs"]
     args.trials = params["trials"]
     args.normalize = params["norm"]
+    args.verbose = params["verbose"] == 1
     args.workers = 0
     return args
 

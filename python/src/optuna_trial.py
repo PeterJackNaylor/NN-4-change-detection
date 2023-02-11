@@ -51,7 +51,13 @@ def objective(opt, trial):
 
     time = 0 if opt.csv1 else -1
 
-    best_score = train_and_test(time, opt, trial=trial, return_model=False)
+    best_score = train_and_test(
+        time,
+        opt,
+        trial=trial,
+        return_model=False,
+        verbose=opt.verbose,
+    )
     return best_score
 
 
@@ -73,8 +79,12 @@ def return_best_model(opt, params):
     opt.activation = params["act"]
 
     time = 0 if opt.csv1 else -1
-
-    model, B, nv, best_score = train_and_test(time, opt, return_model=True)
+    model, B, nv, best_score = train_and_test(
+        time,
+        opt,
+        return_model=True,
+        verbose=opt.verbose,
+    )
     return model, B, nv, best_score, opt
 
 
