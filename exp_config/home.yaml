@@ -27,3 +27,4 @@ lambda_t: #log search
   - 1.e+1 # max
 act: [tanh, relu]
 arch: [default, default-BN, Vlarge]
+verbose: 1

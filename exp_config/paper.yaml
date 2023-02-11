@@ -2,7 +2,7 @@ configname: exp_config/paper.yaml
 out: result/paper
 path: data/full_data/
 extension: ply
-epochs: 100
+epochs: 50
 trials: 50
 norm: one_minus
 single_method: [None, L1_diff]
@@ -15,10 +15,10 @@ wd: #log search
   - 1.e+1 # max
 bs: # power of 2 search
   - 9 # 512 # min
-  - 12 # 2048 # max
+  - 14 # 2048 # max
 scale: # power of 2 search
   - 0 # min
-  - 5 # max
+  - 6 # max
 mapping_size: # power of 2 search
   - 7 # min
   - 10 # max
@@ -27,3 +27,4 @@ lambda_t: #log search
   - 1.e+1 # max
 act: [tanh, relu]
 arch: [default, default-BN, Vlarge]
+verbose: 0

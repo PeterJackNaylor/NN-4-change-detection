@@ -31,12 +31,7 @@ def main():
     pred_test_save(B, nv, time, model, best_score, opt)
 
 
-def train_and_test(
-    time,
-    opt,
-    trial=None,
-    return_model=True,
-):
+def train_and_test(time, opt, trial=None, return_model=True, verbose=True):
 
     train, test, nv = return_dataset(
         opt.csv0,
@@ -71,6 +66,7 @@ def train_and_test(
         method=opt.method,
         trial=trial,
         return_model=return_model,
+        verbose=verbose,
     )
     if return_model:
         model, best_score = outputs
