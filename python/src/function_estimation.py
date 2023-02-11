@@ -63,7 +63,7 @@ def estimate_density(
     if verbose:
         e_iterator = trange(1, hp["epoch"] + 1)
     else:
-        range(1, hp["epoch"] + 1)
+        e_iterator = range(1, hp["epoch"] + 1)
     for epoch in e_iterator:
         train_iterator = tqdm(dataset) if verbose else dataset
         running_loss, total_num = 0.0, 0
