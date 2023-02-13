@@ -96,14 +96,16 @@ def train_siren(model, dset_train, dset_val, device, epochs,
     model.train()
 
 
-    train_bar = tqdm(range(epochs))
+    epoch_train_bar = tqdm(range(epochs))
     best_val_loss = 100000
-    for epoch in train_bar:
+
+    print('Starting traning')
+    for epoch in epoch_train_bar:
 
         # Training
         running_loss = 0
         for batch_idx, (coords, reference) in enumerate(dload_train):
-
+            
             # model with some prior knowledge
             estimated = model(coords)
             train_loss = loss_fun(estimated, reference)
@@ -127,7 +129,9 @@ def train_siren(model, dset_train, dset_val, device, epochs,
 
             
             running_loss = running_loss + train_loss.item()
-
+            print(batch_idx)
+            # text = "Train Batch Loss: {:.5f}".format(running_loss / (batch_idx+1))
+            # batch_train_bar.set_description(text, refresh=False)
 
         # Validation
         with torch.no_grad():
@@ -161,7 +165,7 @@ def train_siren(model, dset_train, dset_val, device, epochs,
                 raise optuna.exceptions.TrialPruned()
         
         text = "Train Epoch [{}/{}] Loss: {:.5f}, Metric: {:.5f}".format(epoch, epochs, running_loss / (batch_idx+1), best_val_loss)
-        train_bar.set_description(text)
+        epoch_train_bar.set_description(text, refresh=False)
     
     best_model = early_stopping.best_model
     print('Best model from epoch', early_stopping.best_epoch)

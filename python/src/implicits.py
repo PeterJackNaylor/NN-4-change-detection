@@ -18,7 +18,10 @@ def LinearBlock(n_in, n_out, activation='relu'):
 def continuous_diff(x, model):
         torch.set_grad_enabled(True)
         x.requires_grad_(True)
+        # x in [N,nvarin]
+        # y in [N,nvarout]
         y = model(x)
+        # dy in [N,nvarout]
         dy_dx = torch.autograd.grad(
                     y, x, torch.ones_like(y), 
                     retain_graph=True, create_graph=True,)[0]
