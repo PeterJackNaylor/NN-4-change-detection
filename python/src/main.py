@@ -6,7 +6,7 @@ from function_estimation import (
 )
 from parser import parser_f
 from data_XYZ import return_dataset, return_dataset_prediction
-from architectures import Model, gen_b
+from architectures import ReturnModel, gen_b
 from plotpoint import scatter2d  # plot_surface, plot_tri_grid
 import os
 
@@ -15,14 +15,14 @@ def main():
     opt = parser_f()
 
     time = 0 if opt.csv1 else -1
-    opt.bs = 2048
-    opt.mapping_size = 512
-    opt.scale = 1
-    opt.architecture = "Vlarge"
+    opt.bs = 4096
+    opt.mapping_size = 1024
+    opt.scale = 5
+    opt.architecture = "skip-6"  # "Vlarge"
     opt.activation = "relu"
-    opt.lr = 0.01
-    opt.wd = 0.005
-    opt.lambda_t = 0.01
+    opt.lr = 0.0001
+    opt.wd = 0.05
+    opt.lambda_t = 0.1
     model, B, nv, best_score = train_and_test(
         time,
         opt,
@@ -33,7 +33,7 @@ def main():
 
 def train_and_test(time, opt, trial=None, return_model=True, verbose=True):
 
-    train, test, nv = return_dataset(
+    train, test, nv, bs = return_dataset(
         opt.csv0,
         opt.csv1,
         bs=opt.bs,
@@ -45,8 +45,7 @@ def train_and_test(time, opt, trial=None, return_model=True, verbose=True):
         B = gen_b(opt.mapping_size, opt.scale, train.input_size)
     else:
         B = None
-
-    model = Model(
+    model = ReturnModel(
         train.input_size,
         arch=opt.architecture,
         activation=opt.activation,
@@ -55,7 +54,7 @@ def train_and_test(time, opt, trial=None, return_model=True, verbose=True):
     )
 
     model = model.cuda()
-    hp = {"lr": opt.lr, "epoch": opt.epochs, "wd": opt.wd}
+    hp = {"lr": opt.lr, "epoch": opt.epochs, "wd": opt.wd, "bs": bs}
     outputs = estimate_density(
         train,
         test,

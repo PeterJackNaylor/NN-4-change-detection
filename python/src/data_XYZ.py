@@ -96,6 +96,10 @@ class XYZ(Dataset):
         nv = self.nv
         for i in range(2):
             self.samples[:, i] = (self.samples[:, i] - nv[i][0]) / nv[i][1]
+            if self.need_inverse_time:
+                tmp = (self.samples_t[:, i] - nv[i][0]) / nv[i][1]
+                self.samples_t[:, i] = tmp
+
         if self.need_target:
             self.targets = (self.targets - nv[2][0]) / nv[2][1]
 
@@ -136,18 +140,33 @@ class XYZ(Dataset):
         return self.samples.shape[0]
 
     def __getitem__(self, idx):
-        sample = self.samples[idx, :]
+        sample = self.samples[idx]
         if not self.need_target:
             return sample
         target = self.targets[idx]
 
         if self.need_inverse_time:
-            sample_t = self.samples_t[idx, :]
+            sample_t = self.samples_t[idx]
 
         if self.need_inverse_time:
             return sample, sample_t, target
         else:
             return sample, target
+
+
+class XYZ_sample(XYZ):
+    def __getitem__(self, idx):
+        return self.samples[idx]
+
+
+class XYZ_sample_target(XYZ):
+    def __getitem__(self, idx):
+        return self.samples[idx], self.targets[idx]
+
+
+class XYZ_sample_time_target(XYZ):
+    def __getitem__(self, idx):
+        return self.samples[idx], self.samples_t[idx], self.targets[idx]
 
 
 class XYZ_predefinedgrid(XYZ):
@@ -210,7 +229,11 @@ def return_dataset(
     time=False,
     method="None",
 ):
-    xyz_train = XYZ(
+    if method == "L1_diff":
+        data_xyz = XYZ_sample_time_target
+    else:
+        data_xyz = XYZ_sample_target
+    xyz_train = data_xyz(
         csv0,
         csv1,
         train_fold=True,
@@ -224,7 +247,7 @@ def return_dataset(
     )
     nv = xyz_train.nv
 
-    xyz_test = XYZ(
+    xyz_test = XYZ_sample_target(
         csv0,
         csv1,
         train_fold=False,
@@ -236,16 +259,18 @@ def return_dataset(
         time=time,
         method="None",
     )
-    while xyz_train.samples.shape[0] < bs:
-        bs = bs // 2
+    n_train = xyz_train.samples.shape[0]
+    bs_train = bs
+    while n_train < bs:
+        bs_train = bs_train // 2
 
-    train_loader = DataLoader(
-        xyz_train,
-        batch_size=bs,
-        shuffle=True,
-        num_workers=0,
-        drop_last=True,
-    )
+    # train_loader = DataLoader(
+    #     xyz_train,
+    #     batch_size=bs,
+    #     shuffle=True,
+    #     num_workers=0,
+    #     drop_last=True,
+    # )
     while xyz_test.samples.shape[0] < bs:
         bs = bs // 2
     test_loader = DataLoader(
@@ -254,5 +279,6 @@ def return_dataset(
         num_workers=0,
         drop_last=True,
     )
-    train_loader.input_size = xyz_train.input_size
-    return train_loader, test_loader, nv
+    # train_loader.input_size = xyz_train.input_size
+    return xyz_train, test_loader, nv, bs_train
+    # return train_loader, test_loader, nv
