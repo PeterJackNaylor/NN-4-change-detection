@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import optuna
+from torchlars import LARS
 
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from pathlib import Path
 print(os.getcwd())
 sys.path.append(str(Path('../src').resolve()))
@@ -48,7 +49,9 @@ class EarlyStopping:
 
         if self.best_score is None:
             self.best_score = score
+            self.best_epoch = epoch
             self.save_checkpoint(val_loss, model)
+            self.best_model = model
         elif score < self.best_score + self.delta:
             self.counter += 1
             if self.verbose: self.trace_func(f'EarlyStopping counter: {self.counter} out of {self.patience}')
@@ -64,7 +67,7 @@ class EarlyStopping:
     def save_checkpoint(self, val_loss, model):
         '''Saves model when validation loss decrease.'''
         if self.verbose:
-            self.trace_func(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
+            self.trace_func(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}) [+{np.abs(self.val_loss_min-val_loss):.6f}].  Saving model ...')
         torch.save(model.state_dict(), self.path)
         self.val_loss_min = val_loss
 
@@ -73,19 +76,24 @@ def train_siren(model, dset_train, dset_val, device, epochs,
                 learning_rate, batch_size, loss_name,
                 val_interval=10, trial=None, xy_cont=None, lam_tv=None, clip_grad=True):
 
-    print(learning_rate, batch_size, loss_name)
+    print("Lr", learning_rate)
+    print("Batch size", batch_size)
     # training on a subset of the full dataset
-    dload_train = torch.utils.data.DataLoader(dset_train, shuffle=True, batch_size=batch_size)
+    dload_train = torch.utils.data.DataLoader(dset_train, shuffle=True, batch_size=batch_size, num_workers=8)
     dload_val = torch.utils.data.DataLoader(dset_val, shuffle=False, batch_size=len(dset_val))
+
+    print(len(dset_train))
+    print(len(dset_val))
 
     losses = {
         'MSE' : torch.nn.MSELoss(),
         'MAE' : torch.nn.L1Loss(),    
     }
 
-    early_stopping = EarlyStopping(patience=5, delta=0.01)
+    early_stopping = EarlyStopping(patience=5, delta=0.0001, verbose=True)
 
     optim = torch.optim.Adam(lr=learning_rate, params=model.parameters())
+    optim = LARS(optimizer=optim, eps=1e-8, trust_coef=0.001)
     loss_fun = losses[loss_name]
             
     loss_train_track = []
@@ -99,6 +107,9 @@ def train_siren(model, dset_train, dset_val, device, epochs,
     epoch_train_bar = tqdm(range(epochs))
     best_val_loss = 100000
 
+    if not xy_cont is None:
+        xy_cont = xy_cont.to(device)
+
     print('Starting traning')
     for epoch in epoch_train_bar:
 
@@ -106,13 +117,16 @@ def train_siren(model, dset_train, dset_val, device, epochs,
         running_loss = 0
         for batch_idx, (coords, reference) in enumerate(dload_train):
             
+            coords = coords.to(device)
+            reference = reference.to(device)
+
             # model with some prior knowledge
             estimated = model(coords)
             train_loss = loss_fun(estimated, reference)
 
-            if not xy_cont is None:
+            if lam_tv > 0 and not xy_cont is None:
                 # off-grid regularization with continuous total variation norm
-                ind = torch.randint(0, xy_cont.shape[0], size=(coords.shape[0] // 2,1))
+                ind = torch.randint(0, xy_cont.shape[0], size=(coords.shape[0]//2,1)).squeeze()
                 dz_dxy = continuous_diff(xy_cont[ind,:], model)
                 tv_norm = torch.mean(torch.abs(dz_dxy))
                 train_loss = train_loss + lam_tv * tv_norm
@@ -129,13 +143,14 @@ def train_siren(model, dset_train, dset_val, device, epochs,
 
             
             running_loss = running_loss + train_loss.item()
-            print(batch_idx)
             # text = "Train Batch Loss: {:.5f}".format(running_loss / (batch_idx+1))
             # batch_train_bar.set_description(text, refresh=False)
 
         # Validation
         with torch.no_grad():
             coords, reference = next(iter(dload_val))
+            coords = coords.to(device)
+            reference = reference.to(device)
             estimated = model(coords)
             val_loss = loss_fun(estimated, reference)
             # metrics = compute_metrics(estimated, reference)
@@ -152,6 +167,7 @@ def train_siren(model, dset_train, dset_val, device, epochs,
         # early_stopping needs the validation loss to check if it has decresed, 
         # and if it has, it will make a checkpoint of the current model
         early_stopping(monitor_loss, model, epoch)
+        # print(early_stopping.early_stop, early_stopping.best_epoch, - early_stopping.best_score)
         best_val_loss = - early_stopping.best_score
         if early_stopping.early_stop:
             print("Early stopping")
@@ -167,8 +183,8 @@ def train_siren(model, dset_train, dset_val, device, epochs,
         text = "Train Epoch [{}/{}] Loss: {:.5f}, Metric: {:.5f}".format(epoch, epochs, running_loss / (batch_idx+1), best_val_loss)
         epoch_train_bar.set_description(text, refresh=False)
     
-    best_model = early_stopping.best_model
-    print('Best model from epoch', early_stopping.best_epoch)
+    best_model = early_stopping.best_model                                                                                                                                                                              
+    print('Best model from epoch', early_stopping.best_epoch, 'with', - early_stopping.best_score                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     )
     results_dict = {
         'conf' : None,
         'loss_val' : np.array(loss_train_track),
