@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from function_estimation import predict_loop
 from data_XYZ import DataLoader, XYZ_predefinedgrid
-from architectures import Model
+from architectures import ReturnModel
 
 
 def load_csv_weight_npz(csv_file0, csv_file1, weight, npz, name, time=-1):
@@ -22,7 +22,7 @@ def load_csv_weight_npz(csv_file0, csv_file1, weight, npz, name, time=-1):
     four_opt = four_opt == "--fourier"
     npz = np.load(npz)
     nv = npz["nv"]
-    arch = npz["architecture"]
+    arch = str(npz["architecture"])
     act = npz["activation"]
 
     input_size = 3 if time != -1 else 2
@@ -32,7 +32,11 @@ def load_csv_weight_npz(csv_file0, csv_file1, weight, npz, name, time=-1):
     else:
         B = None
 
-    model = Model(input_size, arch=arch, activation=act, B=B, fourier=four_opt)
+    model = ReturnModel(input_size,
+                        arch=arch,
+                        activation=act,
+                        B=B,
+                        fourier=four_opt)
     model.load_state_dict(torch.load(weight))
     return table, model, nv
 
