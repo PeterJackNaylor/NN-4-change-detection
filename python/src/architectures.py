@@ -34,6 +34,7 @@ def ReturnModel(
             fourier=fourier,
             number=number,
         )
+
     return mod
 
 
