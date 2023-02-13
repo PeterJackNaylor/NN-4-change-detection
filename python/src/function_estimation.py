@@ -25,7 +25,7 @@ def test_loop(dataloader, model, loss_fn, verbose):
 
     with torch.no_grad():
         for X, z in dataloader:
-            X, z = X.cuda(non_blocking=True), z.cuda(non_blocking=True)
+            # X, z = X.cuda(non_blocking=True), z.cuda(non_blocking=True)
             pred = model(X)
             test_loss = test_loss + loss_fn(pred, z).item()
 
@@ -33,6 +33,14 @@ def test_loop(dataloader, model, loss_fn, verbose):
     if verbose:
         print(f"Test Error: Avg loss: {test_loss:>8f}")
     return test_loss
+
+
+# def generate_batch(n, batch_size):
+#     """Yields bacth of specified size"""
+#     batch_idx = torch.randperm(n).cuda()
+
+#     for i in trange(0, n, batch_size):
+#         yield batch_idx[i : i + batch_size]
 
 
 def estimate_density(
@@ -64,37 +72,43 @@ def estimate_density(
         e_iterator = trange(1, hp["epoch"] + 1)
     else:
         e_iterator = range(1, hp["epoch"] + 1)
-    for epoch in e_iterator:
-        train_iterator = tqdm(dataset) if verbose else dataset
-        running_loss, total_num = 0.0, 0
-        for data_tuple in train_iterator:
-            # with torch.autograd.set_detect_anomaly(True):
-            # with autocast(device_type='cuda', dtype=torch.float16):
 
+    for epoch in e_iterator:
+        # train_iterator = tqdm(dataset) if verbose else dataset
+        running_loss, total_num = 0.0, 0
+        n_data = len(dataset)
+        batch_idx = torch.randperm(n_data).cuda()
+        bs = hp["bs"]
+        train_iterator = tqdm(range(0, n_data, bs))
+        for i in train_iterator:
+            idx = batch_idx[i:(i + bs)]
+            # for data_tuple in train_iterator:
+            # for idx in generate_batch(, ):
             optimizer.zero_grad()
-            if L1_diff:
-                inp, inp_t, target = data_tuple
-            else:
-                inp, target = data_tuple
+            # if L1_diff:
+            #     inp, inp_t, target = data_tuple
+            # else:
+            #     inp, target = data_tuple
 
             # inp, target = inp.cuda(non_blocking=True), target.cuda(
             #     non_blocking=True
             # )
-            target_pred = model(inp)
-            lmse = loss_fn(target_pred, target)
+            with torch.cuda.amp.autocast():
+                target_pred = model(dataset.samples[idx])
+                lmse = loss_fn(target_pred, dataset.targets[idx])
 
-            if L1_diff:
-                # inp_t = inp_t.cuda(non_blocking=True)
-                target_pred_t = model(inp_t)
-                loss = lmse + lambda_t * loss_fn_t(target_pred, target_pred_t)
-            else:
-                loss = lmse
+                if L1_diff:
+                    # inp_t = inp_t.cuda(non_blocking=True)
+                    t_t = model(dataset.samples_t[idx])
+                    loss = lmse + lambda_t * loss_fn_t(target_pred, t_t)
+                else:
+                    loss = lmse
             loss.backward()
             optimizer.step()
             # scaler.scale(loss).backward()
             # scaler.step(optimizer)
             # scaler.update()
-            # opti.step()
+
             if verbose:
                 running_loss = running_loss + loss.item()
                 total_num = total_num + 1

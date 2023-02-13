@@ -52,7 +52,7 @@ def parser_f():
     )
     parser.add_argument(
         "--method",
-        default="method",
+        default="None",
         type=str,
     )
     args = parser.parse_args()
@@ -65,70 +65,3 @@ def parser_f():
     args.verbose = params["verbose"] == 1
     args.workers = 0
     return args
-
-    # parser.add_argument(
-    #     "--activation",
-    #     default="tanh",
-    #     type=str,
-    # )
-    # parser.add_argument(
-    #     "--bs",
-    #     default=2048,
-    #     type=int,
-    #     help="Number of images in each mini-batch",
-    # )
-    # parser.add_argument(
-    #     "--workers",
-    #     default=1,
-    #     type=int,
-    #     help="Number of workers",
-    # )
-    # parser.add_argument(
-    #     "--epochs",
-    #     default=100,
-    #     type=int,
-    #     help="Number of sweeps over the dataset to train",
-    # )
-    # parser.add_argument(
-    #     "--mapping_size",
-    #     default=64,
-    #     type=int,
-    #     help="Number of features to project the vector v",
-    # )
-    # parser.add_argument(
-    #     "--trials",
-    #     default=32,
-    #     type=int,
-    #     help="Number of trials for optuna",
-    # )
-    # parser.add_argument(
-    #     "--lr",
-    #     default=0.01,
-    #     type=float,
-    # )
-    # parser.add_argument(
-    #     "--wd",
-    #     default=0.0005,
-    #     type=float,
-    # )
-    # parser.add_argument(
-    #     "--lambda_t",
-    #     default=0.0,
-    #     type=float,
-    # )
-
-    # parser.add_argument(
-    #     "--scale",
-    #     default=1.0,
-    #     type=float,
-    # )
-    # parser.add_argument(
-    #     "--normalize",
-    #     default="mean",
-    #     type=str,
-    # )
-    # parser.add_argument(
-    #     "--arch",
-    #     default="default",
-    #     type=str,
-    # )

@@ -14,8 +14,8 @@ wd: #log search
   - 1.e-5 # min
   - 1.e+1 # max
 bs: # power of 2 search
-  - 9 # 512 # min
-  - 14 # 2048 # max
+  - 13 # 512 # min
+  - 16 # 2048 # max
 scale: # power of 2 search
   - 0 # min
   - 6 # max
@@ -26,5 +26,5 @@ lambda_t: #log search
   - 1.e-5 # min
   - 1.e+1 # max
 act: [tanh, relu]
-arch: [default, default-BN, Vlarge]
+arch: [default, default-BN, Vlarge, skip-4, skip-5, skip-6]
 verbose: 0
