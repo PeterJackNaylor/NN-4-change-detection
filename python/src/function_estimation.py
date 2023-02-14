@@ -79,7 +79,10 @@ def estimate_density(
         n_data = len(dataset)
         batch_idx = torch.randperm(n_data).cuda()
         bs = hp["bs"]
-        train_iterator = tqdm(range(0, n_data, bs))
+        if verbose:
+            train_iterator = tqdm(range(0, n_data, bs))
+        else:
+            train_iterator = range(0, n_data, bs)
         for i in train_iterator:
             idx = batch_idx[i:(i + bs)]
             # for data_tuple in train_iterator:
@@ -117,6 +120,9 @@ def estimate_density(
                 )
                 train_iterator.set_description(text)
 
+        if epoch == 1:
+            if return_model:
+                torch.save(model.state_dict(), name)
         if epoch % 10 == 0:
             test_score = test_loop(dataset_test, model, loss_fn, verbose)
             if test_score < best_test_score:
