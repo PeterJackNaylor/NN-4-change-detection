@@ -35,88 +35,121 @@ def test_loop(dataloader, model, loss_fn, verbose):
     return test_loss
 
 
-# def generate_batch(n, batch_size):
-#     """Yields bacth of specified size"""
-#     batch_idx = torch.randperm(n).cuda()
+def continuous_diff(x, model):
+    torch.set_grad_enabled(True)
+    x.requires_grad_(True)
+    # x in [N,nvarin]
+    # y in [N,nvarout]
+    y = model(x)
+    # dy in [N,nvarout]
+    dz_dxy = torch.autograd.grad(
+        y,
+        x,
+        torch.ones_like(y),
+        retain_graph=True,
+        create_graph=True,
+    )[0]
+    return dz_dxy
 
-#     for i in trange(0, n, batch_size):
-#         yield batch_idx[i : i + batch_size]
+
+def pick_loss(name):
+    if name == "l2":
+        return nn.MSELoss()
+    elif name == "l1":
+        return nn.L1Loss()
+    elif name == "huber":
+        return nn.HuberLoss()
 
 
 def estimate_density(
     dataset,
     dataset_test,
     model,
-    hp,
-    name,
-    lambda_t=1.0,
-    method="None",
+    opt,
     trial=None,
     return_model=True,
-    verbose=True,
 ):
+
+    name = opt.name + ".pth"
     optimizer = torch.optim.Adam(
         model.parameters(),
-        lr=hp["lr"],
-        weight_decay=hp["wd"],
+        lr=opt.lr,
+        weight_decay=opt.wd,
     )
-    # scaler = GradScaler()
-    loss_fn = nn.MSELoss()
-    L1_diff = method == "L1_diff"
-    if L1_diff:
+
+    L1_time_discrete = opt.L1_time_discrete
+    if L1_time_discrete:
+        lambda_t_d = opt.lambda_discrete
         loss_fn_t = nn.L1Loss()
+    L1_time_gradient = opt.L1_time_gradient
+    if L1_time_gradient:
+        lambda_t_grad = opt.lambda_discrete
+        # loss_fn_grad = nn.L1Loss()
+    tvn = opt.tvn
+    if tvn:
+        std_data = torch.std(dataset.samples[:, 0:2], dim=0)
+        mean_rd = torch.zeros((opt.bs, 2), device="cuda")
+        std_rd = std_data * torch.ones((opt.bs, 2), device="cuda")
+        tv_zeros = torch.zeros((opt.bs, 2), device="cuda")
+        lambda_t_grad = opt.lambda_tvn
+        loss_fn_tvn = pick_loss(opt.loss_tvn)
+
+    loss_fn = nn.MSELoss()
+
     model.train()
     best_test_score = np.inf
     best_epoch = 0
-    if verbose:
-        e_iterator = trange(1, hp["epoch"] + 1)
+    if opt.p.verbose:
+        e_iterator = trange(1, opt.p.epochs + 1)
     else:
-        e_iterator = range(1, hp["epoch"] + 1)
+        e_iterator = range(1, opt.p.epochs + 1)
 
     for epoch in e_iterator:
-        # train_iterator = tqdm(dataset) if verbose else dataset
         running_loss, total_num = 0.0, 0
         n_data = len(dataset)
         batch_idx = torch.randperm(n_data).cuda()
-        bs = hp["bs"]
-        if verbose:
+        bs = opt.bs
+        if opt.p.verbose:
             train_iterator = tqdm(range(0, n_data, bs))
         else:
             train_iterator = range(0, n_data, bs)
         for i in train_iterator:
             idx = batch_idx[i:(i + bs)]
-            # for data_tuple in train_iterator:
-            # for idx in generate_batch(, ):
             optimizer.zero_grad()
-            # if L1_diff:
-            #     inp, inp_t, target = data_tuple
-            # else:
-            #     inp, target = data_tuple
-
-            # inp, target = inp.cuda(non_blocking=True), target.cuda(
-            #     non_blocking=True
-            # )
             with torch.cuda.amp.autocast():
                 target_pred = model(dataset.samples[idx])
                 lmse = loss_fn(target_pred, dataset.targets[idx])
 
-                if L1_diff:
-                    # inp_t = inp_t.cuda(non_blocking=True)
+                if L1_time_discrete:
                     t_t = model(dataset.samples_t[idx])
-                    loss = lmse + lambda_t * loss_fn_t(target_pred, t_t)
+                    loss = lmse + lambda_t_d * loss_fn_t(target_pred, t_t)
                 else:
                     loss = lmse
-            loss.backward()
-            optimizer.step()
-            # scaler.scale(loss).backward()
-            # scaler.step(optimizer)
-            # scaler.update()
 
-            if verbose:
-                running_loss = running_loss + loss.item()
+                if tvn:
+                    ind = torch.randint(
+                        0,
+                        n_data,
+                        size=(bs,),
+                        requires_grad=False,
+                        device="cuda",
+                    )
+                    noise = torch.normal(mean_rd, std_rd)
+                    x_sample = dataset.samples[ind, :]
+                    x_sample[:, 0:2] += noise
+                    dz_dxy = continuous_diff(x_sample, model)
+                    tv_norm = loss_fn_tvn(dz_dxy[:, 0:2], tv_zeros)
+                    loss = loss + lambda_t_grad * tv_norm
+
+            loss.backward()
+            # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.)
+            optimizer.step()
+
+            if opt.p.verbose:
+                running_loss = running_loss + lmse.item()
                 total_num = total_num + 1
                 text = "Train Epoch [{}/{}] Loss: {:.4f}".format(
-                    epoch, hp["epoch"], running_loss / total_num
+                    epoch, opt.p.epochs, running_loss / total_num
                 )
                 train_iterator.set_description(text)
 
@@ -124,11 +157,11 @@ def estimate_density(
             if return_model:
                 torch.save(model.state_dict(), name)
         if epoch % 10 == 0:
-            test_score = test_loop(dataset_test, model, loss_fn, verbose)
+            test_score = test_loop(dataset_test, model, loss_fn, opt.p.verbose)
             if test_score < best_test_score:
                 best_test_score = test_score
                 best_epoch = epoch
-                if verbose:
+                if opt.p.verbose:
                     print(f"best model is now from epoch {epoch}")
                 if return_model:
                     torch.save(model.state_dict(), name)

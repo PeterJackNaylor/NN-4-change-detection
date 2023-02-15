@@ -1,39 +1,43 @@
 
 py_file = file("python/src/optuna_trial.py")
 process two_density_estimation {
-    publishDir "${params.out}/double/${NAME}/", pattern: "*.png"
+
+    publishDir "${params.out}/double/${NAME}/", pattern: "*.png", overwrite: true
     label "gpu"
 
     input:
         tuple val(DATANAME), path(FILE)
         each FOUR
+        each METHOD
         path CONFIG
 
     output:
-        tuple val(NAME),  path("$FNAME" + ".npz"), path("$FNAME" + ".pth"), path(FILE)
+        tuple val(NAME),  path("$FNAME" + ".npz"), path("$FNAME" + ".pth"), path(FILE), val(METHOD)
         path("$FNAME" + "*.png")
 
     script:
-        NAME = "${DATANAME}__FOUR=${FOUR}_double"
-        FNAME = "${FILE.baseName}__FOUR=${FOUR}_double"
+        METH = "double_${METHOD}"
+        NAME = "${DATANAME}__FOUR=${FOUR}__METHOD=${METH}"
+        FNAME = "${DATANAME}${FILE.baseName[-1]}__FOUR=${FOUR}__METHOD=${METH}"
         """
         python $py_file \
             --csv0 $FILE \
             $FOUR \
             --name $FNAME\
             --yaml_file $CONFIG \
-            --method double
+            --method $METHOD
         """
 }
 
 process = file("python/src/process_diff.py")
 
 process post_processing {
+
     label "gpu"
-    publishDir "${params.out}/double/${NAME}/", mode: 'symlink'
+    publishDir "${params.out}/double/${NAME}/", mode: 'symlink', overwrite: true
 
     input:
-        tuple val(NAME), path(NPZ), path(WEIGHTS), path(FILE)
+        tuple val(NAME), path(NPZ), path(WEIGHTS), path(FILE), val(METHOD)
         path CONFIG
 
     output:
@@ -42,27 +46,23 @@ process post_processing {
 
     script:
         """
-        python $process double ${WEIGHTS[0]} ${WEIGHTS[1]} ${FILE[0]} ${FILE[1]} ${NPZ[0]} ${NPZ[1]} ${CONFIG}
+        python $process double_${METHOD[0]} ${WEIGHTS[0]} ${WEIGHTS[1]} ${FILE[0]} ${FILE[1]} ${NPZ[0]} ${NPZ[1]} ${CONFIG}
         """
 }
 
 workflow two_density {
+
     take:
         data
         fourier
+        method
         config
+
     main:
-        two_density_estimation(data, fourier, config)
-        two_density_estimation.out[0].groupTuple().set{fused}
-        post_processing(fused, config)
+        two_density_estimation(data, fourier, method, config)
+        two_density_estimation.out[0].groupTuple().set{grouped}
+        post_processing(grouped, config)
+
     emit:
         post_processing.out[0]
-}
-
-data = Channel.fromPath("LyonN4/*.txt")
-fourier = ["--fourier"]
-
-workflow {
-    main:
-        two_density(data, fourier)
 }

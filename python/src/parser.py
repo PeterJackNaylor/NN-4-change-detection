@@ -2,21 +2,16 @@ import argparse
 import yaml
 
 
-def read_yaml(file):
-    f = open(file)
-    param_grid = yaml.load(f, Loader=yaml.Loader)
-    res = {
-        "norm": param_grid["norm"],
-        "lr": param_grid["lr"],
-        "wd": param_grid["wd"],
-        "bs": param_grid["bs"],
-        "scale": param_grid["scale"],
-        "mp_size": param_grid["mapping_size"],
-        "lambda_t": param_grid["lambda_t"],
-        "act": param_grid["act"],
-        "arch": param_grid["arch"],
-    }
-    return res
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
+
+def read_yaml(path):
+    f = open(path)
+    params = yaml.load(f, Loader=yaml.Loader)
+    return AttrDict(params)
 
 
 def parser_f():
@@ -52,16 +47,11 @@ def parser_f():
     )
     parser.add_argument(
         "--method",
-        default="None",
+        default="M",
         type=str,
     )
     args = parser.parse_args()
 
-    f = open(args.yaml_file)
-    params = yaml.load(f, Loader=yaml.Loader)
-    args.epochs = params["epochs"]
-    args.trials = params["trials"]
-    args.normalize = params["norm"]
-    args.verbose = params["verbose"] == 1
-    args.workers = 0
+    args.p = read_yaml(args.yaml_file)
+    args.p.verbose = args.p.verbose == 1
     return args

@@ -15,14 +15,31 @@ def main():
     opt = parser_f()
 
     time = 0 if opt.csv1 else -1
-    opt.bs = 4096
-    opt.mapping_size = 1024
-    opt.scale = 5
+    opt.bs = 1024
+    opt.mapping_size = 512
+    opt.scale = 4
     opt.architecture = "skip-6"  # "Vlarge"
     opt.activation = "relu"
     opt.lr = 0.0001
-    opt.wd = 0.05
-    opt.lambda_t = 0.1
+    opt.wd = 0.005
+    opt.method = "M+L1TD+TVN"  # "M+L1TD+TVN"
+    opt.L1_time_discrete = "L1TD" in opt.method
+    opt.L1_time_gradient = "L1TG" in opt.method
+    opt.tvn = "TVN" in opt.method
+    if opt.L1_time_discrete:
+        opt.lambda_discrete = 0.08
+    else:
+        opt.lambda_discrete = None
+    if opt.L1_time_gradient:
+        opt.lambda_gradient_time = 0.2
+    else:
+        opt.lambda_gradient_time = None
+    if opt.tvn:
+        opt.lambda_tvn = 0.005
+        opt.loss_tvn = "l1"
+    else:
+        opt.lambda_tvn = None
+        opt.loss_tvn = None
     model, B, nv, best_score = train_and_test(
         time,
         opt,
@@ -31,13 +48,13 @@ def main():
     pred_test_save(B, nv, time, model, best_score, opt)
 
 
-def train_and_test(time, opt, trial=None, return_model=True, verbose=True):
+def train_and_test(time, opt, trial=None, return_model=True):
 
-    train, test, nv, bs = return_dataset(
+    train, test, nv, opt.bs = return_dataset(
         opt.csv0,
         opt.csv1,
         bs=opt.bs,
-        normalize=opt.normalize,
+        normalize=opt.p.norm,
         time=not time,
         method=opt.method,
     )
@@ -54,18 +71,14 @@ def train_and_test(time, opt, trial=None, return_model=True, verbose=True):
     )
 
     model = model.cuda()
-    hp = {"lr": opt.lr, "epoch": opt.epochs, "wd": opt.wd, "bs": bs}
+
     outputs = estimate_density(
         train,
         test,
         model,
-        hp,
-        opt.name + ".pth",
-        lambda_t=opt.lambda_t,
-        method=opt.method,
+        opt,
         trial=trial,
         return_model=return_model,
-        verbose=verbose,
     )
     if return_model:
         model, best_score = outputs

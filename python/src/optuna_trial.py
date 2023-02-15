@@ -1,63 +1,88 @@
 import optuna
 from functools import partial
 from main import train_and_test, pred_test_save
-from parser import read_yaml, parser_f
+from parser import parser_f
 
 
-def objective(opt, trial):
-    p = read_yaml(opt.yaml_file)
+def add_config_optuna_to_opt(opt, trial):
+    # p = read_yaml(opt.yaml_file)
     opt.lr = trial.suggest_float(
         "learning_rate",
-        p["lr"][0],
-        p["lr"][1],
+        opt.p.lr[0],
+        opt.p.lr[1],
         log=True,
     )
     opt.wd = trial.suggest_float(
         "weight_decay",
-        p["wd"][0],
-        p["wd"][1],
+        opt.p.wd[0],
+        opt.p.wd[1],
         log=True,
     )
     bs_int = trial.suggest_int(
         "bs_int",
-        p["bs"][0],
-        p["bs"][1],
+        opt.p.bs[0],
+        opt.p.bs[1],
     )
     opt.bs = int(2**bs_int)
     if opt.fourier:
         scale_int = trial.suggest_int(
             "scale_int",
-            p["scale"][0],
-            p["scale"][1],
+            opt.p.scale[0],
+            opt.p.scale[1],
         )
         opt.scale = int(2**scale_int)
         mapping_size_int = trial.suggest_int(
             "mapping_size_int",
-            p["mp_size"][0],
-            p["mp_size"][1],
+            opt.p.mapping_size[0],
+            opt.p.mapping_size[1],
         )
         opt.mapping_size = int(2**mapping_size_int)
     else:
         opt.scale = None
         opt.mapping_size = None
-    if opt.method == "L1_diff":
-        opt.lambda_t = trial.suggest_float(
-            "lambda_t", p["lambda_t"][0], p["lambda_t"][1], log=True
+
+    opt.L1_time_discrete = "L1TD" in opt.method
+    opt.L1_time_gradient = "L1TG" in opt.method
+    opt.tvn = "TVN" in opt.method
+
+    if opt.L1_time_discrete:
+        opt.lambda_discrete = trial.suggest_float(
+            "lambda_discrete",
+            opt.p.lambda_discrete[0],
+            opt.p.lambda_discrete[1],
+            log=True,
         )
     else:
-        opt.lambda_t = None
-    opt.activation = trial.suggest_categorical("act", p["act"])
-    opt.architecture = trial.suggest_categorical("architecture", p["arch"])
+        opt.lambda_discrete = None
+    if opt.L1_time_gradient:
+        opt.lambda_gradient_time = trial.suggest_float(
+            "lambda_gradient_time",
+            opt.p.lambda_gradient_time[0],
+            opt.p.lambda_gradient_time[1],
+            log=True,
+        )
+    else:
+        opt.lambda_gradient_time = None
+    if opt.tvn:
+        opt.lambda_tvn = trial.suggest_float(
+            "lambda_tvn", opt.p.lambda_tvn[0], opt.p.lambda_tvn[1], log=True
+        )
+        opt.loss_tvn = trial.suggest_categorical("loss_tvn", opt.p.loss_tvn)
+    else:
+        opt.lambda_tvn = None
+        opt.loss_tvn = None
 
+    opt.activation = trial.suggest_categorical("act", opt.p.act)
+    opt.architecture = trial.suggest_categorical("architecture", opt.p.arch)
+    return opt
+
+
+def objective(opt, trial):
+
+    opt = add_config_optuna_to_opt(opt, trial)
     time = 0 if opt.csv1 else -1
 
-    best_score = train_and_test(
-        time,
-        opt,
-        trial=trial,
-        return_model=False,
-        verbose=opt.verbose,
-    )
+    best_score = train_and_test(time, opt, trial=trial, return_model=False)
     return best_score
 
 
@@ -72,19 +97,30 @@ def return_best_model(opt, params):
         mapping_size_int = params["mapping_size_int"]
         opt.mapping_size = int(2**mapping_size_int)
     opt.architecture = params["architecture"]
-    if opt.method == "L1_diff":
-        opt.lambda_t = params["lambda_t"]
+
+    opt.L1_time_discrete = "L1TD" in opt.method
+    opt.L1_time_gradient = "L1TG" in opt.method
+    opt.tvn = "TVN" in opt.method
+
+    if opt.L1_time_discrete:
+        opt.lambda_discrete = params["lambda_discrete"]
     else:
-        opt.lambda_t = None
+        opt.lambda_discrete = None
+    if opt.L1_time_gradient:
+        opt.lambda_gradient_time = params["lambda_gradient_time"]
+    else:
+        opt.lambda_gradient_time = None
+    if opt.tvn:
+        opt.lambda_tvn = params["lambda_tvn"]
+        opt.loss_tvn = params["loss_tvn"]
+    else:
+        opt.lambda_tvn = None
+        opt.loss_tvn = None
+
     opt.activation = params["act"]
 
     time = 0 if opt.csv1 else -1
-    model, B, nv, best_score = train_and_test(
-        time,
-        opt,
-        return_model=True,
-        verbose=opt.verbose,
-    )
+    model, B, nv, best_score = train_and_test(time, opt, return_model=True)
     return model, B, nv, best_score, opt
 
 
@@ -97,7 +133,7 @@ def main():
         pruner=optuna.pruners.HyperbandPruner(),
     )
     obj = partial(objective, options)
-    study.optimize(obj, n_trials=options.trials)
+    study.optimize(obj, n_trials=options.p.trials)
 
     best_params = study.best_trial.params
 
