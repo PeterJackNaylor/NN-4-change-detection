@@ -14,11 +14,11 @@ class XYZ(Dataset):
         train_fraction=0.8,
         seed=42,
         pred_type="table_predictions",
-        step_grid=2,
+        step_grid=2.0,
         nv=None,
         normalize="mean",
         time=False,
-        method="None",
+        method="M",
     ):
         """
         Args:
@@ -28,7 +28,7 @@ class XYZ(Dataset):
                 on a sample.
         """
         self.time = time
-        self.need_inverse_time = method == "L1_diff"
+        self.need_inverse_time = "L1TD" in method or "L1TG" in method
         self.need_target = not pred_type == "grid_predictions"
         self.nv = nv
         input_size = 3 if self.time else 2
@@ -154,19 +154,19 @@ class XYZ(Dataset):
             return sample, target
 
 
-class XYZ_sample(XYZ):
-    def __getitem__(self, idx):
-        return self.samples[idx]
+# class XYZ_sample(XYZ):
+#     def __getitem__(self, idx):
+#         return self.samples[idx]
 
 
-class XYZ_sample_target(XYZ):
-    def __getitem__(self, idx):
-        return self.samples[idx], self.targets[idx]
+# class XYZ_sample_target(XYZ):
+#     def __getitem__(self, idx):
+#         return self.samples[idx], self.targets[idx]
 
 
-class XYZ_sample_time_target(XYZ):
-    def __getitem__(self, idx):
-        return self.samples[idx], self.samples_t[idx], self.targets[idx]
+# class XYZ_sample_time_target(XYZ):
+#     def __getitem__(self, idx):
+#         return self.samples[idx], self.samples_t[idx], self.targets[idx]
 
 
 class XYZ_predefinedgrid(XYZ):
@@ -227,13 +227,13 @@ def return_dataset(
     bs=2048,
     normalize="mean",
     time=False,
-    method="None",
+    method="M",
 ):
-    if method == "L1_diff":
-        data_xyz = XYZ_sample_time_target
-    else:
-        data_xyz = XYZ_sample_target
-    xyz_train = data_xyz(
+    # if "L1TD" in method or "L1TG" in method:
+    #     data_xyz = XYZ_sample_time_target
+    # else:
+    #     data_xyz = XYZ_sample_target
+    xyz_train = XYZ(
         csv0,
         csv1,
         train_fold=True,
@@ -247,7 +247,7 @@ def return_dataset(
     )
     nv = xyz_train.nv
 
-    xyz_test = XYZ_sample_target(
+    xyz_test = XYZ(
         csv0,
         csv1,
         train_fold=False,
@@ -257,7 +257,7 @@ def return_dataset(
         nv=nv,
         normalize=normalize,
         time=time,
-        method="None",
+        method="M",
     )
     n_train = xyz_train.samples.shape[0]
     bs_train = bs

@@ -7,10 +7,10 @@ from parser import read_yaml
 import pandas as pd
 
 yaml_file = read_yaml(sys.argv[-1])
-normalize = yaml_file["norm"]
+normalize = yaml_file.norm
 method = sys.argv[1]
 
-if method == "double":
+if "double" in method:
     weight0 = sys.argv[2]
     weight1 = sys.argv[3]
 
@@ -20,7 +20,7 @@ if method == "double":
     npz0 = sys.argv[6]
     npz1 = sys.argv[7]
 
-    dataname = weight0.split("__")[0]
+    dataname = weight0.split("__")[0][:-1]
     tag = int(weight0.split("__")[0][-1])
 
     n0 = weight0.split(".p")[0]
@@ -229,26 +229,6 @@ name_png = f"{dataname}_predictionZ0_and_label.png"
 fig.write_image(name_png)
 
 
-# compute IoU
-
-# name_npz = f"{double}_{dataname}_results.npz"
-
-# np.savez(
-#     name_npz,
-#     indices=grid_indices,
-#     x1=table1.X.values,
-#     y1=table1.Y.values,
-#     z0_on1=z0_on1,
-#     z1_on1=z1_on1,
-#     z0_ongrid=z0_ongrid,
-#     z1_ongrid=z1_ongrid,
-#     labels_on1=y_on1,
-#     z0_n=z0_n,
-#     z1_n=z1_n,
-#     labels_1_n=labels_1_n,
-#     labels_2_n=labels_2_n,
-# )
-
 name_csv = f"{method}_{dataname}_results.csv"
 
 scores = {
@@ -264,7 +244,7 @@ scores = {
     "threshold_best_high": thresh_b[1],
     "AUC_nochange": auc_score["No change"],
     "AUC_addition": auc_score["Addition"],
-    "AUC_delition": auc_score["Deletion"],
+    "AUC_deletion": auc_score["Deletion"],
     "MSE_PC0": mse0,
     "MSE_PC1": mse1,
 }
