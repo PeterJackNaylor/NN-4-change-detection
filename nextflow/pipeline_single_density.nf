@@ -44,7 +44,7 @@ process post_processing {
 
     script:
         """
-        python $process single_${METHOD[0]} ${WEIGHT} ${FILE0} ${FILE1} ${NPZ} ${CONFIG}
+        python $process single_${METHOD} ${WEIGHT} ${FILE0} ${FILE1} ${NPZ} ${CONFIG}
         """
 }
 
