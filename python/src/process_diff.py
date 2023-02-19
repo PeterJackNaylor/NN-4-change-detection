@@ -1,113 +1,54 @@
 import sys
 import numpy as np
-from utils_diff import load_csv_weight_npz, predict_z
+from utils_diff import load_data, predict_z
 from utils import compute_iou, compute_auc_mc, compute_mse
 from plotpoint import scatter2d, twod_distribution
-from parser import read_yaml
 import pandas as pd
 
-yaml_file = read_yaml(sys.argv[-1])
-normalize = yaml_file.norm
-method = sys.argv[1]
 
-if "double" in method:
-    weight0 = sys.argv[2]
-    weight1 = sys.argv[3]
+(
+    table0,
+    table1,
+    model0,
+    model1,
+    nv0,
+    nv1,
+    time0,
+    time1,
+    dataname,
+    normalize,
+    four_opt,
+    method,
+) = load_data(sys)
 
-    csv0 = sys.argv[4]
-    csv1 = sys.argv[5]
+xy_onz0 = table0[["X", "Y"]].values.astype("float32")
+xy_onz1 = table1[["X", "Y"]].values.astype("float32")
 
-    npz0 = sys.argv[6]
-    npz1 = sys.argv[7]
-
-    dataname = weight0.split("__")[0][:-1]
-    tag = int(weight0.split("__")[0][-1])
-
-    n0 = weight0.split(".p")[0]
-    n1 = weight1.split(".p")[0]
-
-    if tag != 1:
-        w0_file = weight0
-        w1_file = weight1
-        csvfile0 = csv0
-        csvfile1 = csv1
-        npz_0 = npz0
-        npz_1 = npz1
-        name0 = n0
-        name1 = n1
-    else:
-        w0_file = weight1
-        w1_file = weight0
-        csvfile0 = csv1
-        csvfile1 = csv0
-        npz_0 = npz1
-        npz_1 = npz0
-        name0 = n1
-        name1 = n0
-    time = time0 = time1 = -1
-
-    table0, model0, nv0 = load_csv_weight_npz(
-        csvfile0, None, w0_file, npz_0, name0, time
-    )
-    table1, model1, nv1 = load_csv_weight_npz(
-        csvfile1, None, w1_file, npz_1, name1, time
-    )
-    four_opt = name0.split("FOUR=")[1].split("__")[0].split("_")[0]
-    four_opt = four_opt == "--fourier"
-else:
-
-    weight = sys.argv[2]
-
-    csvfile0 = sys.argv[3]
-    csvfile1 = sys.argv[4]
-
-    npz = sys.argv[5]
-    time = 1
-
-    dataname = weight.split("__")[0]
-    name = weight.split(".p")[0]
-
-    table, model, nv = load_csv_weight_npz(
-        csvfile0,
-        csvfile1,
-        weight,
-        npz,
-        name,
-        time,
-    )
-    table0 = table[table["T"] == 0]
-    table1 = table[table["T"] == 1]
-    model0, model1 = model, model
-    nv0, nv1 = nv, nv
-    time0 = 0.0
-    time1 = 1.0
-    four_opt = name.split("FOUR=")[1].split("__")[0].split("_")[0]
-    four_opt = four_opt == "--fourier"
-
-
-z0_n = table0.shape[0]
-z1_n = table1.shape[0]
-
-labels_1_n = (table1["label"].astype(int).values == 1).sum()
-labels_2_n = (table1["label"].astype(int).values == 2).sum()
-
-# grid_indices = define_grid(table0, table1, step=2)
-# xy_grid = grid_indices.copy()  # .astype("float32")
-xy_onz0 = table0[["X", "Y"]].values  # .astype("float32")
-xy_onz1 = table1[["X", "Y"]].values  # .astype("float32")
-
-z0_on0 = predict_z(model0, nv0, xy_onz0, normalize=normalize, time=time0)
-z0_on1 = predict_z(model0, nv0, xy_onz1, normalize=normalize, time=time0)
-z1_on1 = predict_z(model1, nv1, xy_onz1, normalize=normalize, time=time1)
+z0_on0 = predict_z(
+    model0,
+    nv0,
+    xy_onz0,
+    normalize=normalize,
+    time=time0,
+)
+z0_on1 = predict_z(
+    model0,
+    nv0,
+    xy_onz1.copy(),
+    normalize=normalize,
+    time=time0,
+)
+z1_on1 = predict_z(
+    model1,
+    nv1,
+    xy_onz1.copy(),
+    normalize=normalize,
+    time=time1,
+)
 
 diff_z_on1 = z1_on1 - z0_on1
-
-# z0_ongrid = predict_z(model0, nv0, xy_grid, normalize=normalize, time=time0)
-# z1_ongrid = predict_z(model1, nv1, xy_grid, normalize=normalize, time=time1)
-
-
-# diff_z = z1_ongrid - z0_ongrid
 y_on1 = table1["label"].values
+
 # compute IoU
 
 iou_b, thresh_b, pred = compute_iou(diff_z_on1, y_on1)
@@ -153,6 +94,7 @@ sub_z1_on1 = z1_on1[idx]
 sub_z0_on1 = z0_on1[idx]
 sub_pred = pred[idx]
 sub_pred_gmm = pred_gmm[idx]
+
 
 fig = twod_distribution(sub_diff_z_on1)
 name_png = f"{dataname}_diffZ1_distribution.png"

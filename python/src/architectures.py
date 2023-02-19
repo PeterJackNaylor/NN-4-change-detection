@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-from numpy import random, float32
+from numpy import random, float32, sqrt
 
 
 def gen_b(mapping, scale, input_size):
@@ -228,6 +228,111 @@ def gen_arch(arch, act, input_size):
     else:
         raise ValueError("Architecture unkown")
     return mod
+
+
+# create the GON network (a SIREN as in https://vsitzmann.github.io/siren/)
+class SirenLayer(nn.Module):
+    def __init__(
+        self,
+        in_f,
+        out_f,
+        w0=[30, 30, 180],
+        is_first=False,
+        is_last=False,
+    ):
+        super().__init__()
+
+        if is_first:
+            assert in_f == len(w0)
+
+        self.in_f = in_f
+        self.w0 = w0[0]
+        self.linear = nn.Linear(in_f, out_f)
+        self.is_first = is_first
+        self.is_last = is_last
+        self.init_weights()
+
+    def init_weights(self):
+        # with torch.no_grad():
+        #     if self.is_first:
+        #         for k in range(self.in_f):
+        #             self.linear.weight.uniform_(-1, 1)
+        #             self.linear.weight.data[:,k] *= self.w0[k] / self.in_f
+        #     else:
+        #         b = np.sqrt(6 / self.in_f)
+        #         self.linear.weight.uniform_(-b, b)
+        b = 1 / self.in_f if self.is_first else sqrt(6 / self.in_f) / self.w0
+        with torch.no_grad():
+            self.linear.weight.uniform_(-b, b)
+            self.linear.bias.uniform_(-3, 3)
+
+    def forward(self, x, cond_freq=None, cond_phase=None):
+        x = self.linear(x)
+        if cond_freq is not None:
+            freq = cond_freq  # .unsqueeze(1).expand_as(x)
+            x = freq * x
+        if cond_phase is not None:
+            phase_shift = cond_phase  # unsqueeze(1).expand_as(x)
+            x = x + phase_shift
+        return x if self.is_last else torch.sin(self.w0 * x)
+
+
+class SIREN(nn.Module):
+    def __init__(
+        self,
+        in_dim,
+        out_dim,
+        hidden_num,
+        hidden_dim,
+        feature_scales,
+    ):
+        super(SIREN, self).__init__()
+        self.hidden_dim = hidden_dim
+        model_dim = [in_dim] + hidden_num * [hidden_dim] + [out_dim]
+        assert len(feature_scales) == in_dim
+        first_layer = SirenLayer(
+            model_dim[0], model_dim[1], w0=feature_scales, is_first=True
+        )
+        other_layers = []
+        for dim0, dim1 in zip(model_dim[1:-2], model_dim[2:-1]):
+            other_layers.append(SirenLayer(dim0, dim1))
+            # other_layers.append(nn.LayerNorm(dim1))
+        final_layer = SirenLayer(model_dim[-2], model_dim[-1], is_last=True)
+        self.model = nn.Sequential(first_layer, *other_layers, final_layer)
+
+    def forward(self, xin):
+        return self.model(xin)
+
+
+class INCANT(torch.nn.Module):
+    def __init__(
+        self, in_dim, out_dim, hidden_num, hidden_dim, feature_scales, do_skip
+    ):
+        super(INCANT, self).__init__()
+        self.model = SIREN(
+            in_dim,
+            out_dim,
+            hidden_num,
+            hidden_dim,
+            feature_scales,
+        )
+        # self.model = RFF(in_dim, out_dim, hidden_num, hidden_dim,
+        # 'relu', feature_dim=1024, feature_scale=feature_scales[0] )
+        self.do_skip = do_skip
+
+    # extend SIREN forward
+    def forward(self, xin):
+        if self.do_skip:
+            for i, layer in enumerate(self.model.model):
+                if layer.is_first:
+                    x = layer(xin)
+                elif layer.is_last:
+                    out = layer(x)
+                else:
+                    x = layer(x) + x if i % 2 == 1 else layer(x)
+        else:
+            out = self.model(xin)
+        return torch.tanh(out)
 
     # elif arch == "skipMed":
     #     # need to be sure this type of thing works

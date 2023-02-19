@@ -14,7 +14,7 @@ class XYZ(Dataset):
         train_fraction=0.8,
         seed=42,
         pred_type="table_predictions",
-        step_grid=2.0,
+        step_grid=0.5,
         nv=None,
         normalize="mean",
         time=False,

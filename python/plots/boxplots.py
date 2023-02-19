@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import argparse
 import plotly.express as px
@@ -53,7 +54,7 @@ def prep_data(csv):
     df["name"] = df.apply(
         lambda row: "{} ({})".format(row["data"], row["method"]), axis=1
     )
-    auc_var = ["AUC_addition", "AUC_delition", "AUC_nochange"]
+    auc_var = ["AUC_addition", "AUC_deletion", "AUC_nochange"]
     df["AUC"] = df[auc_var].mean(axis=1)
     df["MSE"] = (df["MSE_PC0"] + df["MSE_PC1"]) / 2
     return df
@@ -61,7 +62,7 @@ def prep_data(csv):
 
 def box_plot_fourrier(table, var):
     t = table.copy()
-    t = t[t["method"] == "L1_diff"]
+    t = t[t["method"] == "single_M+L1TD"]
     fig = px.box(t, x="name", y=var, color="fourrier")
     fig.write_image("box_plot_importance_fourrier_{}.png".format(var))
 
@@ -71,7 +72,7 @@ def box_plot_different_method(table, var, only_good=True):
     t = t[t["fourrier"]]
     if only_good:
         suffixe = "only_good"
-        t = t[t["method"] != "double"]
+        t = t[~t["method"].isin(["double_M", "double_M+TVN"])]
     else:
         suffixe = ""
     METHODS = list(t.method.unique())
@@ -99,6 +100,25 @@ def box_plot_different_method(table, var, only_good=True):
     fig.write_image("box_plot_method_{}{}.png".format(var, suffixe))
 
 
+def table_avg(table):
+    auc = pd.pivot_table(
+        table, values="AUC", index="data", columns="method", aggfunc=np.mean
+    )
+    auc.loc["Avg"] = auc.mean(axis=0)
+    iou = pd.pivot_table(
+        table,
+        values="IoU_gmm",
+        index="data",
+        columns="method",
+        aggfunc=np.mean,
+    )
+    iou.loc["Avg"] = iou.mean(axis=0)
+    print("AUC")
+    print(auc)
+    print("IoU")
+    print(iou)
+
+
 def main():
     opt = parser_f()
     df = prep_data(opt.csv)
@@ -112,6 +132,8 @@ def main():
     box_plot_different_method(df, "IoU_gmm", only_good=False)
     box_plot_different_method(df, "AUC", only_good=False)
     box_plot_different_method(df, "MSE", only_good=False)
+
+    table_avg(df)
 
 
 if __name__ == "__main__":

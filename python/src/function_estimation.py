@@ -136,6 +136,8 @@ def estimate_density(
                     )
                     noise = torch.normal(mean_rd, std_rd)
                     x_sample = dataset.samples[ind, :]
+                    # from torchviz import make_dot
+                    # import pdb; pdb.set_trace()
                     x_sample[:, 0:2] += noise
                     dz_dxy = continuous_diff(x_sample, model)
                     tv_norm = loss_fn_tvn(dz_dxy[:, 0:2], tv_zeros)
@@ -168,6 +170,8 @@ def estimate_density(
             elif epoch - best_epoch > 20:
                 for g in optimizer.param_groups:
                     g["lr"] = g["lr"] / 10
+        if torch.isnan(loss):
+            break
         # Add prune mechanism
         if trial:
             trial.report(lmse, epoch)

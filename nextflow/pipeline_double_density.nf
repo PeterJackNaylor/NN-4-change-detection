@@ -23,6 +23,7 @@ process two_density_estimation {
         python $py_file \
             --csv0 $FILE \
             $FOUR \
+            --method $METHOD \
             --name $FNAME\
             --yaml_file $CONFIG \
             --method $METHOD
