@@ -80,6 +80,7 @@ def add_config_optuna_to_opt(opt, trial):
 def objective(opt, trial):
 
     opt = add_config_optuna_to_opt(opt, trial)
+    print(opt)
     time = 0 if opt.csv1 else -1
 
     best_score = train_and_test(time, opt, trial=trial, return_model=False)
@@ -118,7 +119,6 @@ def return_best_model(opt, params):
         opt.loss_tvn = None
 
     opt.activation = params["act"]
-
     time = 0 if opt.csv1 else -1
     model, B, nv, best_score = train_and_test(time, opt, return_model=True)
     return model, B, nv, best_score, opt

@@ -8,6 +8,7 @@ norm: one_minus
 single_method: [M+L1TD, M+L1TD+TVN, M+TVN]
 double_method: [M+TVN]
 fourier: [--fourier]
+SIREN: [--siren, ""]
 lr: #log search
   - 1.e-5 # min
   - 1.e-1 # max
@@ -19,7 +20,7 @@ bs: # power of 2 search
   - 13 # 2048 # max
 scale: # power of 2 search
   - 0 # min
-  - 6 # max
+  - 8 # max
 mapping_size: # power of 2 search
   - 7 # min
   - 11 # max

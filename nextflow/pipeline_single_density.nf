@@ -22,6 +22,7 @@ process one_density_estimation {
             --csv0 $FILE0 \
             --csv1 $FILE1 \
             $FOUR \
+            --method $METHOD \
             --name $NAME \
             --yaml_file $CONFIG
 
