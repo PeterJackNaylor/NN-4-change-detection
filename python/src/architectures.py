@@ -13,26 +13,23 @@ def gen_b(mapping, scale, input_size):
 def ReturnModel(
     input_size,
     arch="default",
-    activation="relu",
-    B=None,
-    fourier=True,
+    args=True,
 ):
+
     if arch in ["default", "default-BN", "Vlarge"]:
-        mod = Fmodel(
-            input_size,
-            arch=arch,
-            activation=activation,
-            B=B,
-            fourier=fourier,
-        )
+        mod = Fmodel(input_size, arch, args)
     elif "skip" in arch:
         number = int(arch[-1])
         mod = SkipModel(
             input_size,
-            activation=activation,
-            B=B,
-            fourier=fourier,
+            args,
             number=number,
+        )
+    elif arch == "siren":
+        mod = SIREN(
+            input_size,
+            1,
+            args,
         )
 
     return mod
@@ -42,18 +39,16 @@ class Fmodel(nn.Module):
     def __init__(
         self,
         input_size,
-        arch="default",
-        activation="tanh",
-        B=None,
-        fourier=False,
+        arch,
+        args,
     ):
         super(Fmodel, self).__init__()
-        if activation == "tanh":
+        if args.activation == "tanh":
             act = nn.Tanh
-        elif activation == "relu":
+        elif args.activation == "relu":
             act = nn.ReLU
-        if fourier:
-            self.fourier_mapping_setup(B)
+        if args.fourier:
+            self.fourier_mapping_setup(args.B)
             self.first = self.fourier_map
             input_size = self.fourier_size * 2
         else:
@@ -119,24 +114,16 @@ class SkipModel(Fmodel):
     def __init__(
         self,
         input_size,
-        activation="tanh",
-        B=None,
-        fourier=False,
+        args,
         number=1,
     ):
-        super(SkipModel, self).__init__(
-            input_size,
-            "default",
-            activation,
-            B,
-            fourier,
-        )
-        if activation == "tanh":
+        super().__init__(input_size, "default", args)
+        if args.activation == "tanh":
             self.act = nn.Tanh
-        elif activation == "relu":
+        elif args.activation == "relu":
             self.act = nn.ReLU
-        if fourier:
-            self.fourier_mapping_setup(B)
+        if args.fourier:
+            self.fourier_mapping_setup(args.B)
             self.first = self.fourier_map
             input_size = self.fourier_size * 2
         else:
@@ -159,7 +146,7 @@ class SkipModel(Fmodel):
             layer_size = [(first, 10)]
         elif number == 6:
             first = 256
-            layer_size = [(first, 20), (128, 2), (64, 2)]
+            layer_size = [(first, 10), (128, 2), (64, 2)]
 
         layers = []
         self.mlp_size0 = nn.Sequential(
@@ -174,14 +161,12 @@ class SkipModel(Fmodel):
             layers.append(skip_and_down_block(size, nnext, self.act, number))
         self.layers = nn.Sequential(*layers)
         self.last = nn.Linear(size, 1)
-        # self.model = nn.Sequential(self.mlp_size0, self.layers, self.last)
 
     def forward(self, x):
         x = self.first(x)
         x = self.mlp_size0(x)
         x = self.layers(x)
         x = self.last(x)
-        # x = self.model(x)
         regression = torch.squeeze(x)
         return regression
 
@@ -236,31 +221,20 @@ class SirenLayer(nn.Module):
         self,
         in_f,
         out_f,
-        w0=[30, 30, 180],
+        w0=256,
         is_first=False,
         is_last=False,
     ):
         super().__init__()
 
-        if is_first:
-            assert in_f == len(w0)
-
         self.in_f = in_f
-        self.w0 = w0[0]
+        self.w0 = w0
         self.linear = nn.Linear(in_f, out_f)
         self.is_first = is_first
         self.is_last = is_last
         self.init_weights()
 
     def init_weights(self):
-        # with torch.no_grad():
-        #     if self.is_first:
-        #         for k in range(self.in_f):
-        #             self.linear.weight.uniform_(-1, 1)
-        #             self.linear.weight.data[:,k] *= self.w0[k] / self.in_f
-        #     else:
-        #         b = np.sqrt(6 / self.in_f)
-        #         self.linear.weight.uniform_(-b, b)
         b = 1 / self.in_f if self.is_first else sqrt(6 / self.in_f) / self.w0
         with torch.no_grad():
             self.linear.weight.uniform_(-b, b)
@@ -277,7 +251,7 @@ class SirenLayer(nn.Module):
         return x if self.is_last else torch.sin(self.w0 * x)
 
 
-class SIREN(nn.Module):
+class SIREN_h(nn.Module):
     def __init__(
         self,
         in_dim,
@@ -286,10 +260,10 @@ class SIREN(nn.Module):
         hidden_dim,
         feature_scales,
     ):
-        super(SIREN, self).__init__()
+        super(SIREN_h, self).__init__()
         self.hidden_dim = hidden_dim
         model_dim = [in_dim] + hidden_num * [hidden_dim] + [out_dim]
-        assert len(feature_scales) == in_dim
+
         first_layer = SirenLayer(
             model_dim[0], model_dim[1], w0=feature_scales, is_first=True
         )
@@ -304,21 +278,19 @@ class SIREN(nn.Module):
         return self.model(xin)
 
 
-class INCANT(torch.nn.Module):
-    def __init__(
-        self, in_dim, out_dim, hidden_num, hidden_dim, feature_scales, do_skip
-    ):
-        super(INCANT, self).__init__()
-        self.model = SIREN(
+class SIREN(torch.nn.Module):
+    def __init__(self, in_dim, out_dim, args):
+        super(SIREN, self).__init__()
+        self.model = SIREN_h(
             in_dim,
             out_dim,
-            hidden_num,
-            hidden_dim,
-            feature_scales,
+            args.siren_hidden_num,
+            args.siren_hidden_dim,
+            args.scale,
         )
         # self.model = RFF(in_dim, out_dim, hidden_num, hidden_dim,
         # 'relu', feature_dim=1024, feature_scale=feature_scales[0] )
-        self.do_skip = do_skip
+        self.do_skip = args.siren_skip
 
     # extend SIREN forward
     def forward(self, xin):
@@ -332,18 +304,5 @@ class INCANT(torch.nn.Module):
                     x = layer(x) + x if i % 2 == 1 else layer(x)
         else:
             out = self.model(xin)
+        out = torch.squeeze(out)
         return torch.tanh(out)
-
-    # elif arch == "skipMed":
-    #     # need to be sure this type of thing works
-    #     def mod(x):
-    #         x = nn.Linear(input_size, 256)(x)
-    #         x = act()(x)
-    #         x = nn.Linear(256, 128)(x)
-    #         x = act()(x)
-    #         for _ in range(4):
-    #             y = nn.Linear(128, 128)(x)
-    #             y = act()(y)
-    #             x = x + y
-    #         x = nn.Linear(128, 1)(x)
-    #         return x

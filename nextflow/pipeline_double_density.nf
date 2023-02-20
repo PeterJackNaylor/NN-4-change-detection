@@ -7,7 +7,7 @@ process two_density_estimation {
 
     input:
         tuple val(DATANAME), path(FILE)
-        each FOUR
+        each FEATURE
         each METHOD
         path CONFIG
 
@@ -17,12 +17,12 @@ process two_density_estimation {
 
     script:
         METH = "double_${METHOD}"
-        NAME = "${DATANAME}__FOUR=${FOUR}__METHOD=${METH}"
-        FNAME = "${DATANAME}${FILE.baseName[-1]}__FOUR=${FOUR}__METHOD=${METH}"
+        NAME = "${DATANAME}__FEATUREMETHOD=${FEATURE}__METHOD=${METH}"
+        FNAME = "${DATANAME}${FILE.baseName[-1]}__FEATUREMETHOD=${FEATURE}__METHOD=${METH}"
         """
         python $py_file \
             --csv0 $FILE \
-            $FOUR \
+            ${FEATURE} \
             --method $METHOD \
             --name $FNAME\
             --yaml_file $CONFIG \
@@ -55,12 +55,12 @@ workflow two_density {
 
     take:
         data
-        fourier
+        feature_method
         method
         config
 
     main:
-        two_density_estimation(data, fourier, method, config)
+        two_density_estimation(data, feature_method, method, config)
         two_density_estimation.out[0].groupTuple().set{grouped}
         post_processing(grouped, config)
 

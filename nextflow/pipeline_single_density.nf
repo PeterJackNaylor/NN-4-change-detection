@@ -7,7 +7,7 @@ process one_density_estimation {
 
     input:
         tuple val(DATANAME), file(FILE0), file(FILE1)
-        each FOUR
+        each FEATURE
         each METHOD
         path CONFIG
 
@@ -16,16 +16,15 @@ process one_density_estimation {
         path("$NAME" + "*.png")
 
     script:
-        NAME = "${DATANAME}__FOUR=${FOUR}__METHOD=${METHOD}"
+        NAME = "${DATANAME}__FEATUREMETHOD=${FEATURE}__METHOD=${METHOD}"
         """
         python $py_file \
             --csv0 $FILE0 \
             --csv1 $FILE1 \
-            $FOUR \
+            $FEATURE \
             --method $METHOD \
             --name $NAME \
             --yaml_file $CONFIG
-
         """
 }
 
@@ -53,12 +52,12 @@ workflow one_density {
 
     take:
         paired_data
-        fourier
+        feature_method
         method
         config
 
     main:
-        one_density_estimation(paired_data, fourier, method, config)
+        one_density_estimation(paired_data, feature_method, method, config)
         post_processing(one_density_estimation.out[0], config)
 
     emit:

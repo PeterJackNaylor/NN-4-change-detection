@@ -7,8 +7,7 @@ trials: 50
 norm: one_minus
 single_method: [M+L1TD, M+L1TD+TVN, M+TVN]
 double_method: [M+TVN]
-fourier: [--fourier]
-SIREN: [--siren, ""]
+feature_method: [--fourier, --siren]
 lr: #log search
   - 1.e-5 # min
   - 1.e-1 # max
@@ -33,7 +32,12 @@ lambda_gradient_time: #log search
 lambda_tvn: #log search
   - 1.e-5 # min
   - 1.e+1 # max
+SIREN:
+  - parameters:
+      hidden_num: [1, 6]
+      hidden_dim: [6, 12] # power of 2 search
+      do_skip: [0, 1]
 loss_tvn: [l1, huber]
 act: [tanh, relu]
-arch: [default, default-BN, Vlarge, skip-4, skip-5, skip-6]
+arch: [default, Vlarge, skip-4, skip-5, skip-6]
 verbose: 0
