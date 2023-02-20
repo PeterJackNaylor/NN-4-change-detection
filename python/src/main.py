@@ -40,7 +40,7 @@ def main():
 
     model, model_hp = train_and_test(time, opt, model_hp)
 
-    pred_test_save(model, model_hp, time, opt)
+    # pred_test_save(model, model_hp, time, opt)
 
 
 def train_and_test(time, opt, model_hp, trial=None, return_model=True):
