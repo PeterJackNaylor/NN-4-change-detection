@@ -208,6 +208,7 @@ def estimate_density(
             #         g["lr"] = g["lr"] / 10
             if early_stopper.early_stop(test_score):
                 break
+
         if not torch.isfinite(loss):
             break
         # Add prune mechanism
