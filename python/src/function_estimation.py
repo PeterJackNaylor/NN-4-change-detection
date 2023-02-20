@@ -74,7 +74,7 @@ def continuous_diff(x, model):
         y,
         x,
         torch.ones_like(y),
-        retain_graph=True,
+        # retain_graph=True,
         create_graph=True,
     )[0]
     return dz_dxy

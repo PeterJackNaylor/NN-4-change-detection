@@ -26,7 +26,7 @@ def main():
     model_hp.activation = "relu"
     model_hp.lr = 0.001
     model_hp.wd = 0.005
-
+    opt.method = "M+TVN"
     model_hp.L1_time_discrete = "L1TD" in opt.method
     model_hp.L1_time_gradient = "L1TG" in opt.method
     model_hp.tvn = "TVN" in opt.method
