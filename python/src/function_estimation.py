@@ -5,29 +5,62 @@ from tqdm import tqdm, trange
 import optuna
 
 
-def predict_loop(dataloader, model):
+class EarlyStopper:
+    def __init__(self, patience=1, testing_epoch=5, min_delta=1e-4):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.min_validation_loss = np.inf
+        self.testing_epoch = 5
 
+    def early_stop(self, validation_loss):
+        print(
+            "val loss {} criteria {} delta {}".format(
+                validation_loss, self.min_validation_loss, self.min_delta
+            )
+        )
+        if validation_loss < self.min_validation_loss - self.min_delta:
+            self.min_validation_loss = validation_loss
+            self.counter = 0
+        elif validation_loss < self.min_validation_loss:
+            self.counter += self.testing_epoch
+            if self.counter >= self.patience:
+                return True
+        elif validation_loss > (self.min_validation_loss + self.min_delta):
+            self.counter += self.testing_epoch
+            if self.counter >= self.patience:
+                return True
+        return False
+
+
+def predict_loop(dataset, bs, model):
+    n_data = len(dataset)
+    batch_idx = torch.arange(0, n_data, dtype=int, device="cuda")
+    train_iterator = tqdm(range(0, n_data, bs))
     preds = []
     with torch.no_grad():
-        for X in dataloader:
-            X = X.cuda(non_blocking=True)
-            pred = model(X)
-            if X.shape[0] == 1:
-                pred = torch.Tensor([pred]).cuda()
+        for i in train_iterator:
+            idx = batch_idx[i : (i + bs)]
+            pred = model(dataset.samples[idx])
             preds.append(pred)
     preds = torch.cat(preds)
     return preds
 
 
-def test_loop(dataloader, model, loss_fn, verbose):
-    num_batches = len(dataloader)
+def test_loop(dataset, model, bs, loss_fn, verbose):
+    n_data = len(dataset)
+    num_batches = n_data // bs
+    batch_idx = torch.arange(0, n_data, dtype=int, device="cuda")
     test_loss = 0
-
+    if verbose:
+        train_iterator = tqdm(range(0, n_data, bs))
+    else:
+        train_iterator = range(0, n_data, bs)
     with torch.no_grad():
-        for X, z in dataloader:
-            # X, z = X.cuda(non_blocking=True), z.cuda(non_blocking=True)
-            pred = model(X)
-            test_loss = test_loss + loss_fn(pred, z).item()
+        for i in train_iterator:
+            idx = batch_idx[i : (i + bs)]
+            pred = model(dataset.samples[idx])
+            test_loss = test_loss + loss_fn(pred, dataset.targets[idx]).item()
 
     test_loss /= num_batches
     if verbose:
@@ -66,11 +99,14 @@ def estimate_density(
     dataset_test,
     model,
     opt,
+    name,
     trial=None,
     return_model=True,
 ):
 
-    name = opt.name + ".pth"
+    name = name + ".pth"
+
+    early_stopper = EarlyStopper(patience=10)
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=opt.lr,
@@ -98,23 +134,23 @@ def estimate_density(
 
     model.train()
     best_test_score = np.inf
-    best_epoch = 0
-    if opt.p.verbose:
-        e_iterator = trange(1, opt.p.epochs + 1)
+    # best_epoch = 0
+    if opt.verbose:
+        e_iterator = trange(1, opt.epochs + 1)
     else:
-        e_iterator = range(1, opt.p.epochs + 1)
+        e_iterator = range(1, opt.epochs + 1)
 
     for epoch in e_iterator:
         running_loss, total_num = 0.0, 0
         n_data = len(dataset)
         batch_idx = torch.randperm(n_data).cuda()
         bs = opt.bs
-        if opt.p.verbose:
+        if opt.verbose:
             train_iterator = tqdm(range(0, n_data, bs))
         else:
             train_iterator = range(0, n_data, bs)
         for i in train_iterator:
-            idx = batch_idx[i:(i + bs)]
+            idx = batch_idx[i : (i + bs)]
             optimizer.zero_grad()
             with torch.cuda.amp.autocast():
                 target_pred = model(dataset.samples[idx])
@@ -137,8 +173,21 @@ def estimate_density(
                     noise = torch.normal(mean_rd, std_rd)
                     x_sample = dataset.samples[ind, :]
                     # from torchviz import make_dot
-                    # import pdb; pdb.set_trace()
+                    # make_dot(x_sample,
+                    # params=dict(model.named_parameters()), show_attrs=True,
+                    # show_saved=True).render("x", format="png")
                     x_sample[:, 0:2] += noise
+                    # make_dot(x_sample, params=dict(model.named_parameters()),
+                    # show_attrs=True, show_saved=True).render("x_tilde",
+                    #  format="png")
+                    # noisy = torch.cat([noise,
+                    #  0.2+torch.zeros((opt.bs, 1), device="cuda")], axis=1)
+                    # noisy.requires_grad(True)
+                    # y = x_sample + noisy
+                    # make_dot(y, params=dict(model.named_parameters()),
+                    # show_attrs=True, show_saved=True).render("y",
+                    # format="png")
+                    # import pdb; pdb.set_trace()
                     dz_dxy = continuous_diff(x_sample, model)
                     tv_norm = loss_fn_tvn(dz_dxy[:, 0:2], tv_zeros)
                     loss = loss + lambda_t_grad * tv_norm
@@ -147,30 +196,38 @@ def estimate_density(
             # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.)
             optimizer.step()
 
-            if opt.p.verbose:
+            if opt.verbose:
                 running_loss = running_loss + lmse.item()
                 total_num = total_num + 1
                 text = "Train Epoch [{}/{}] Loss: {:.4f}".format(
-                    epoch, opt.p.epochs, running_loss / total_num
+                    epoch, opt.epochs, running_loss / total_num
                 )
                 train_iterator.set_description(text)
 
         if epoch == 1:
             if return_model:
                 torch.save(model.state_dict(), name)
-        if epoch % 10 == 0:
-            test_score = test_loop(dataset_test, model, loss_fn, opt.p.verbose)
+        if epoch % 5 == 0:
+            test_score = test_loop(
+                dataset_test,
+                model,
+                opt.bs,
+                loss_fn,
+                opt.verbose,
+            )
             if test_score < best_test_score:
                 best_test_score = test_score
-                best_epoch = epoch
-                if opt.p.verbose:
+                # best_epoch = epoch
+                if opt.verbose:
                     print(f"best model is now from epoch {epoch}")
                 if return_model:
                     torch.save(model.state_dict(), name)
-            elif epoch - best_epoch > 20:
-                for g in optimizer.param_groups:
-                    g["lr"] = g["lr"] / 10
-        if torch.isnan(loss):
+            # if epoch - best_epoch > 10:
+            #     for g in optimizer.param_groups:
+            #         g["lr"] = g["lr"] / 10
+            if early_stopper.early_stop(test_score):
+                break
+        if not torch.isfinite(loss):
             break
         # Add prune mechanism
         if trial:

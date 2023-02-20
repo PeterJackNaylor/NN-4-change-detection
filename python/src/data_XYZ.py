@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import pandas as pd
 
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 
 
 class XYZ(Dataset):
@@ -14,7 +14,7 @@ class XYZ(Dataset):
         train_fraction=0.8,
         seed=42,
         pred_type="table_predictions",
-        step_grid=2.,
+        step_grid=2.0,
         nv=None,
         normalize="mean",
         time=False,
@@ -198,7 +198,6 @@ class XYZ_predefinedgrid(XYZ):
 def return_dataset_prediction(
     csv0,
     csv1,
-    bs=2048,
     normalize="mean",
     nv=None,
     time=0,
@@ -211,14 +210,7 @@ def return_dataset_prediction(
         time=time,
         normalize=normalize,
     )
-    loader = DataLoader(
-        xyz,
-        batch_size=bs,
-        shuffle=False,
-        num_workers=0,
-        drop_last=False,
-    )
-    return loader, xyz
+    return xyz
 
 
 def return_dataset(
@@ -259,10 +251,10 @@ def return_dataset(
         time=time,
         method="M",
     )
-    n_train = xyz_train.samples.shape[0]
-    bs_train = bs
-    while n_train < bs:
-        bs_train = bs_train // 2
+    # n_train = xyz_train.samples.shape[0]
+    # bs_train = bs
+    # while n_train < bs:
+    #     bs_train = bs_train // 2
 
     # train_loader = DataLoader(
     #     xyz_train,
@@ -271,14 +263,15 @@ def return_dataset(
     #     num_workers=0,
     #     drop_last=True,
     # )
-    while xyz_test.samples.shape[0] < bs:
-        bs = bs // 2
-    test_loader = DataLoader(
-        xyz_test,
-        batch_size=bs,
-        num_workers=0,
-        drop_last=True,
-    )
+    # while xyz_test.samples.shape[0] < bs:
+    #     bs = bs // 2
+    # test_loader = DataLoader(
+    #     xyz_test,
+    #     batch_size=bs,
+    #     num_workers=0,
+    #     drop_last=True,
+    # )
     # train_loader.input_size = xyz_train.input_size
-    return xyz_train, test_loader, nv, bs_train
+    return xyz_train, xyz_test, nv
+    # return xyz_train, xyz_test, nv, bs_train
     # return train_loader, test_loader, nv

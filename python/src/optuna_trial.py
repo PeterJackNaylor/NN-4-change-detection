@@ -1,18 +1,22 @@
 import optuna
 from functools import partial
 from main import train_and_test, pred_test_save
-from parser import parser_f
+from parser import parser_f, AttrDict
 
 
 def add_config_optuna_to_opt(opt, trial):
-    # p = read_yaml(opt.yaml_file)
-    opt.lr = trial.suggest_float(
+    model_hp = AttrDict()
+    model_hp.fourier = opt.fourier
+    model_hp.siren = opt.siren
+    model_hp.verbose = opt.p.verbose
+    model_hp.epochs = opt.p.epochs
+    model_hp.lr = trial.suggest_float(
         "learning_rate",
         opt.p.lr[0],
         opt.p.lr[1],
         log=True,
     )
-    opt.wd = trial.suggest_float(
+    model_hp.wd = trial.suggest_float(
         "weight_decay",
         opt.p.wd[0],
         opt.p.wd[1],
@@ -23,105 +27,145 @@ def add_config_optuna_to_opt(opt, trial):
         opt.p.bs[0],
         opt.p.bs[1],
     )
-    opt.bs = int(2**bs_int)
-    if opt.fourier:
-        scale_int = trial.suggest_int(
-            "scale_int",
-            opt.p.scale[0],
-            opt.p.scale[1],
-        )
-        opt.scale = int(2**scale_int)
+    model_hp.bs = int(2**bs_int)
+    if model_hp.fourier:
         mapping_size_int = trial.suggest_int(
             "mapping_size_int",
             opt.p.mapping_size[0],
             opt.p.mapping_size[1],
         )
-        opt.mapping_size = int(2**mapping_size_int)
-    else:
-        opt.scale = None
-        opt.mapping_size = None
+        model_hp.mapping_size = int(2**mapping_size_int)
 
-    opt.L1_time_discrete = "L1TD" in opt.method
-    opt.L1_time_gradient = "L1TG" in opt.method
-    opt.tvn = "TVN" in opt.method
+    if model_hp.fourier or model_hp.siren:
+        scale_int = trial.suggest_int(
+            "scale_int",
+            opt.p.scale[0],
+            opt.p.scale[1],
+        )
+        model_hp.scale = int(2**scale_int)
 
-    if opt.L1_time_discrete:
-        opt.lambda_discrete = trial.suggest_float(
+    model_hp.L1_time_discrete = "L1TD" in opt.method
+    model_hp.L1_time_gradient = "L1TG" in opt.method
+    model_hp.tvn = "TVN" in opt.method
+
+    if model_hp.L1_time_discrete:
+        model_hp.lambda_discrete = trial.suggest_float(
             "lambda_discrete",
             opt.p.lambda_discrete[0],
             opt.p.lambda_discrete[1],
             log=True,
         )
-    else:
-        opt.lambda_discrete = None
-    if opt.L1_time_gradient:
-        opt.lambda_gradient_time = trial.suggest_float(
+
+    if model_hp.L1_time_gradient:
+        model_hp.lambda_gradient_time = trial.suggest_float(
             "lambda_gradient_time",
             opt.p.lambda_gradient_time[0],
             opt.p.lambda_gradient_time[1],
             log=True,
         )
-    else:
-        opt.lambda_gradient_time = None
-    if opt.tvn:
-        opt.lambda_tvn = trial.suggest_float(
+
+    if model_hp.tvn:
+        model_hp.lambda_tvn = trial.suggest_float(
             "lambda_tvn", opt.p.lambda_tvn[0], opt.p.lambda_tvn[1], log=True
         )
-        opt.loss_tvn = trial.suggest_categorical("loss_tvn", opt.p.loss_tvn)
-    else:
-        opt.lambda_tvn = None
-        opt.loss_tvn = None
+        model_hp.loss_tvn = trial.suggest_categorical(
+            "loss_tvn",
+            opt.p.loss_tvn,
+        )
 
-    opt.activation = trial.suggest_categorical("act", opt.p.act)
-    opt.architecture = trial.suggest_categorical("architecture", opt.p.arch)
-    return opt
+    if model_hp.siren:
+        model_hp.architecture = "siren"
+        model_hp.siren_hidden_num = trial.suggest_int(
+            "siren_hidden_num",
+            opt.p.siren.hidden_num[0],
+            opt.p.siren.hidden_num[1],
+        )
+        siren_hidden_dim_int = trial.suggest_int(
+            "siren_hidden_dim_int",
+            opt.p.siren.hidden_dim[0],
+            opt.p.siren.hidden_dim[1],
+        )
+        model_hp.siren_hidden_dim = int(2**siren_hidden_dim_int)
+        siren_do_skip_int = trial.suggest_categorical(
+            "do_skip",
+            opt.p.siren.do_skip,
+        )
+        model_hp.siren_skip = siren_do_skip_int == 1
+
+    else:
+        model_hp.architecture = trial.suggest_categorical(
+            "architecture",
+            opt.p.arch,
+        )
+        model_hp.activation = trial.suggest_categorical("act", opt.p.act)
+    return model_hp
 
 
 def objective(opt, trial):
 
-    opt = add_config_optuna_to_opt(opt, trial)
-    print(opt)
+    model_hp = add_config_optuna_to_opt(opt, trial)
     time = 0 if opt.csv1 else -1
 
-    best_score = train_and_test(time, opt, trial=trial, return_model=False)
-    return best_score
+    model_hp = train_and_test(
+        time,
+        opt,
+        model_hp,
+        trial=trial,
+        return_model=False,
+    )
+    return model_hp.best_score
 
 
 def return_best_model(opt, params):
-    opt.lr = params["learning_rate"]
-    opt.wd = params["weight_decay"]
+
+    model_hp = AttrDict()
+    model_hp.fourier = opt.fourier
+    model_hp.siren = opt.siren
+    model_hp.verbose = opt.p.verbose
+    model_hp.epochs = opt.p.epochs
+    model_hp.lr = params["learning_rate"]
+    model_hp.wd = params["weight_decay"]
     bs_int = params["bs_int"]
-    opt.bs = int(2**bs_int)
-    if opt.fourier:
+    model_hp.bs = int(2**bs_int)
+    if model_hp.siren or opt.fourier:
         scale_int = params["scale_int"]
-        opt.scale = int(2**scale_int)
+        model_hp.scale = int(2**scale_int)
+    if model_hp.fourier:
         mapping_size_int = params["mapping_size_int"]
-        opt.mapping_size = int(2**mapping_size_int)
-    opt.architecture = params["architecture"]
-
-    opt.L1_time_discrete = "L1TD" in opt.method
-    opt.L1_time_gradient = "L1TG" in opt.method
-    opt.tvn = "TVN" in opt.method
-
-    if opt.L1_time_discrete:
-        opt.lambda_discrete = params["lambda_discrete"]
+        model_hp.mapping_size = int(2**mapping_size_int)
+    if model_hp.siren:
+        model_hp.architecture = "siren"
+        model_hp.siren_hidden_num = params["siren_hidden_num"]
+        siren_hidden_dim_int = params["siren_hidden_dim_int"]
+        model_hp.siren_hidden_dim = int(2**siren_hidden_dim_int)
+        model_hp.siren_skip = params["do_skip"] == 1
     else:
-        opt.lambda_discrete = None
-    if opt.L1_time_gradient:
-        opt.lambda_gradient_time = params["lambda_gradient_time"]
-    else:
-        opt.lambda_gradient_time = None
-    if opt.tvn:
-        opt.lambda_tvn = params["lambda_tvn"]
-        opt.loss_tvn = params["loss_tvn"]
-    else:
-        opt.lambda_tvn = None
-        opt.loss_tvn = None
+        model_hp.architecture = params["architecture"]
+        model_hp.activation = params["act"]
 
-    opt.activation = params["act"]
+    model_hp.L1_time_discrete = "L1TD" in opt.method
+    model_hp.L1_time_gradient = "L1TG" in opt.method
+    model_hp.tvn = "TVN" in opt.method
+
+    if model_hp.L1_time_discrete:
+        model_hp.lambda_discrete = params["lambda_discrete"]
+
+    if model_hp.L1_time_gradient:
+        model_hp.lambda_gradient_time = params["lambda_gradient_time"]
+
+    if model_hp.tvn:
+        model_hp.lambda_tvn = params["lambda_tvn"]
+        model_hp.loss_tvn = params["loss_tvn"]
+
     time = 0 if opt.csv1 else -1
-    model, B, nv, best_score = train_and_test(time, opt, return_model=True)
-    return model, B, nv, best_score, opt
+    model, model_hp = train_and_test(
+        time,
+        opt,
+        model_hp,
+        trial=None,
+        return_model=True,
+    )
+    return model, model_hp
 
 
 def main():
@@ -137,9 +181,9 @@ def main():
 
     best_params = study.best_trial.params
 
-    model, B, nv, best_score, opt = return_best_model(options, best_params)
+    model, model_hp = return_best_model(options, best_params)
     time = 0 if options.csv1 else -1
-    pred_test_save(B, nv, time, model, best_score, opt)
+    pred_test_save(model, model_hp, time, options)
 
     for key, value in best_params.items():
         print("{}: {}".format(key, value))

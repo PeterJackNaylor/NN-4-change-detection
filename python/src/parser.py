@@ -36,6 +36,12 @@ def parser_f():
     parser.set_defaults(fourier=False)
 
     parser.add_argument(
+        "--siren",
+        action="store_true",
+    )
+    parser.set_defaults(siren=False)
+
+    parser.add_argument(
         "--name",
         default="last",
         type=str,
@@ -53,5 +59,7 @@ def parser_f():
     args = parser.parse_args()
 
     args.p = read_yaml(args.yaml_file)
+    if args.siren:
+        args.p.siren = AttrDict(args.p.siren)
     args.p.verbose = args.p.verbose == 1
     return args

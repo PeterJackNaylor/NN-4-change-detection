@@ -17,7 +17,7 @@ import pandas as pd
     time1,
     dataname,
     normalize,
-    four_opt,
+    fs,
     method,
 ) = load_data(sys)
 
@@ -176,7 +176,7 @@ name_csv = f"{method}_{dataname}_results.csv"
 scores = {
     "method": method,
     "normalize": normalize,
-    "fourrier": four_opt,
+    "fs": fs,
     "IoU_gmm": iou_gmm,
     "threshold_gmm_low": thresh_gmm[0],
     "threshold_gmm_high": thresh_gmm[1],
