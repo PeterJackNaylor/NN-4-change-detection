@@ -14,11 +14,6 @@ class EarlyStopper:
         self.testing_epoch = 5
 
     def early_stop(self, validation_loss):
-        print(
-            "val loss {} criteria {} delta {}".format(
-                validation_loss, self.min_validation_loss, self.min_delta
-            )
-        )
         if validation_loss < self.min_validation_loss - self.min_delta:
             self.min_validation_loss = validation_loss
             self.counter = 0
@@ -79,7 +74,7 @@ def continuous_diff(x, model):
         y,
         x,
         torch.ones_like(y),
-        retain_graph=True,
+        # retain_graph=True,
         create_graph=True,
     )[0]
     return dz_dxy
@@ -170,25 +165,11 @@ def estimate_density(
                         requires_grad=False,
                         device="cuda",
                     )
-                    noise = torch.normal(mean_rd, std_rd)
                     x_sample = dataset.samples[ind, :]
-                    # from torchviz import make_dot
-                    # make_dot(x_sample,
-                    # params=dict(model.named_parameters()), show_attrs=True,
-                    # show_saved=True).render("x", format="png")
+                    noise = torch.normal(mean_rd, std_rd)
+                    x_sample.requires_grad_(False)
                     x_sample[:, 0:2] += noise
-                    # make_dot(x_sample, params=dict(model.named_parameters()),
-                    # show_attrs=True, show_saved=True).render("x_tilde",
-                    #  format="png")
-                    # noisy = torch.cat([noise,
-                    #  0.2+torch.zeros((opt.bs, 1), device="cuda")], axis=1)
-                    # noisy.requires_grad(True)
-                    # y = x_sample + noisy
-                    # make_dot(y, params=dict(model.named_parameters()),
-                    # show_attrs=True, show_saved=True).render("y",
-                    # format="png")
-                    # import pdb; pdb.set_trace()
-                    dz_dxy = continuous_diff(x_sample, model)
+                    dz_dxy = continuous_diff(torch.Tensor(x_sample), model)
                     tv_norm = loss_fn_tvn(dz_dxy[:, 0:2], tv_zeros)
                     loss = loss + lambda_t_grad * tv_norm
 
@@ -227,6 +208,7 @@ def estimate_density(
             #         g["lr"] = g["lr"] / 10
             if early_stopper.early_stop(test_score):
                 break
+
         if not torch.isfinite(loss):
             break
         # Add prune mechanism
