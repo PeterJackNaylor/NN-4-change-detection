@@ -7,7 +7,7 @@ trials: 5
 norm: "one_minus"
 single_method: [M+L1TD+TVN] #, M+L1TG M , M+L1TD, , M+TVN
 double_method: [] # [M, M+TVN]
-feature_method: [--siren, --fourier, ""] # [, --siren, ""]
+feature_method: [--siren] # [, --siren, ""], --fourier, ""
 lr: #log search
   - 1.e-5 # min
   - 1.e-1 # max
@@ -38,5 +38,5 @@ siren:
   do_skip: [0, 1]
 loss_tvn: [l1]
 act: [tanh, relu]
-arch: [default, default-BN, Vlarge, skip-4, skip-5, skip-6]
+arch: [default, Vlarge, skip-4, skip-5, skip-6]
 verbose: 1

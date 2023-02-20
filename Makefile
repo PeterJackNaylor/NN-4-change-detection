@@ -13,3 +13,6 @@ clipped:
 
 clipped_home:
 	nextflow run nextflow/main.nf -params-file exp_config/home.yaml -resume
+
+looting_home:
+	nextflow run nextflow/main_real_data.nf -params-file exp_config/looting_home.yaml -resume
