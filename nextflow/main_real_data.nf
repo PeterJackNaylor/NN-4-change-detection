@@ -5,8 +5,9 @@ include { one_density } from './pipeline_single_density.nf'
 
 
 // IFL Parameters
-fourier = params.fourier
-method = params.single_method
+feature_method = params.feature_method
+single_method = params.single_method
+double_method = params.double_method
 config = file(params.configname)
 
 
@@ -14,9 +15,12 @@ workflow {
 
     main:
         prepare_txt_real_data(params.path)
+        prepare_txt_real_data.out[0] .set{ppC}
+        prepare_txt_real_data.out[1] .set{pC}
 
-        two_density(pointClouds, fourier, config)
-        one_density(pairedPointsclouds, fourier, method, config)
+
+        two_density(pC, feature_method, double_method, config)
+        one_density(ppC, feature_method, single_method, config)
 
         two_density.out.concat(one_density.out).collectFile(name: "${params.out}/benchmark.csv", skip: 1, keepHeader: true)
 }
