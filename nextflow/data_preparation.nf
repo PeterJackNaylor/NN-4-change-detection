@@ -58,7 +58,7 @@ workflow prepare_txt_real_data {
 
     main:
         paired = Channel.fromFilePairs(path + "{0,1}.txt")
-        append_columns_headers(data_pairs)
+        append_columns_headers(paired)
         append_columns_headers.out.set{pairedPointsclouds}
         pairedPointsclouds.map{it -> [[it[0], it[1]], [it[0], it[2]]]}.flatten().buffer(size: 2).set{pointClouds}
 

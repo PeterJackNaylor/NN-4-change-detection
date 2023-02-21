@@ -30,12 +30,20 @@ def clean_hp(d):
 
 def load_csv_weight_npz(csv_file0, csv_file1, weight, npz, time=-1):
 
-    table = pd.read_csv(csv_file0)[["X", "Y", "Z", "label_ch"]]
-    table.columns = ["X", "Y", "Z", "label"]
+    table = pd.read_csv(csv_file0)
+    label = "label_ch" in table.columns
+    if label:
+        columns = ["X", "Y", "Z", "label_ch"]
+    else:
+        columns = ["X", "Y", "Z"]
+    table = table[columns]
+    if label:
+        table.columns = ["X", "Y", "Z", "label"]
     table["T"] = 0
     if csv_file1:
-        table1 = pd.read_csv(csv_file1)[["X", "Y", "Z", "label_ch"]]
-        table1.columns = ["X", "Y", "Z", "label"]
+        table1 = pd.read_csv(csv_file1)[columns]
+        if label:
+            table1.columns = ["X", "Y", "Z", "label"]
         table1["T"] = 1
         table = pd.concat([table, table1], axis=0)
     table = table.reset_index(drop=True)
