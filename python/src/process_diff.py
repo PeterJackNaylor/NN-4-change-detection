@@ -104,7 +104,7 @@ try:
     fig = twod_distribution(sub_diff_z_on1)
     name_png = f"{dataname}_diffZ1_distribution.png"
     fig.write_image(name_png)
-except ValueError:
+except ValueError and np.linalg.LinAlgError:
     pass
 
 if label:
@@ -112,7 +112,7 @@ if label:
         fig = twod_distribution(sub_diff_z_on1, sub_y_on1)
         name_png = f"{dataname}_diffZ1_distribution_by_label.png"
         fig.write_image(name_png)
-    except ValueError:
+    except ValueError and np.linalg.LinAlgError:
         pass
 
 
@@ -120,7 +120,7 @@ try:
     fig = twod_distribution(sub_diff_z_on1, sub_pred_gmm)
     name_png = f"{dataname}_diffZ1_distribution_by_gmmlabel.png"
     fig.write_image(name_png)
-except ValueError:
+except ValueError and np.linalg.LinAlgError:
     pass
 
 try:
