@@ -5,9 +5,9 @@ extension: ply
 epochs: 40
 trials: 10
 norm: one_minus
-single_method: [M, M+L1TD, M+L1TD+TVN, M+TVN]
-double_method: [M, M+TVN]
-feature_method: [--fourier, --siren, ""]
+single_method: [M, M+L1TD, M+TVN]
+double_method: []
+feature_method: [--fourier]
 lr: #log search
   - 1.e-5 # min
   - 1.e-1 # max
