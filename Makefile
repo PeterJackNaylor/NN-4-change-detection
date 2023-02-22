@@ -5,6 +5,9 @@ full_data_home:
 full_data:
 	nextflow run nextflow/main.nf -params-file exp_config/paper.yaml -resume -profile raiden
 
+full_data_kuma:
+	nextflow run nextflow/main.nf -params-file exp_config/paper.yaml -resume -profile kuma
+
 full_data_test:
 	nextflow run nextflow/main.nf -params-file exp_config/test_raiden.yaml -resume -profile raiden
 
