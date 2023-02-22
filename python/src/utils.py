@@ -81,8 +81,11 @@ def compute_iou(diffz, y, use_gmm=False, threshold=None):
 
     if use_gmm:
         y_pred, threshold = gmm_predict(diffz)
-        # threshold[0] -= 1
-        # threshold[1] += 1
+        try:
+            threshold[0] -= 1
+            threshold[1] += 1
+        except Exception as e:
+            print(e)
         y_pred, miou = iou(y, diffz, threshold)
         return miou, threshold, y_pred
 
