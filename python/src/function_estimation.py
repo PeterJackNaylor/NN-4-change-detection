@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm, trange
 import optuna
+from torchlars import LARS
 
 
 class EarlyStopper:
@@ -103,17 +104,21 @@ def estimate_density(
         lr=opt.lr,
         weight_decay=opt.wd,
     )
+    optimizer = LARS(optimizer=optimizer, eps=1e-8, trust_coef=0.001)
 
     L1_time_discrete = opt.L1_time_discrete
     if L1_time_discrete:
+        print("Using L1TD")
         lambda_t_d = opt.lambda_discrete
         loss_fn_t = nn.L1Loss()
     L1_time_gradient = opt.L1_time_gradient
     if L1_time_gradient:
+        print("Using L1TG")
         lambda_t_grad = opt.lambda_discrete
         # loss_fn_grad = nn.L1Loss()
     tvn = opt.tvn
     if tvn:
+        print("Using TVN")
         std_data = torch.std(dataset.samples[:, 0:2], dim=0)
         mean_rd = torch.zeros((opt.bs, 2), device="cuda")
         std_rd = std_data * torch.ones((opt.bs, 2), device="cuda")
