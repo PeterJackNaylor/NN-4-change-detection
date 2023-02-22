@@ -19,14 +19,14 @@ def main():
     model_hp.epochs = opt.p.epochs
 
     time = 0 if opt.csv1 else -1
-    model_hp.bs = 1024
+    model_hp.bs = 1024 * 16
     model_hp.mapping_size = 512
     model_hp.scale = 4
-    model_hp.architecture = "skip-4"  # "Vlarge"
-    model_hp.activation = "relu"
-    model_hp.lr = 0.001
-    model_hp.wd = 0.005
-    opt.method = "M+TVN"
+    model_hp.architecture = "skip-5"  # "Vlarge"
+    model_hp.activation = "tanh"
+    model_hp.lr = 0.0001
+    model_hp.wd = 0.0005
+    opt.method = "M+L1TD"
     model_hp.L1_time_discrete = "L1TD" in opt.method
     model_hp.L1_time_gradient = "L1TG" in opt.method
     model_hp.tvn = "TVN" in opt.method
@@ -40,7 +40,7 @@ def main():
 
     model, model_hp = train_and_test(time, opt, model_hp)
 
-    # pred_test_save(model, model_hp, time, opt)
+    pred_test_save(model, model_hp, time, opt)
 
 
 def train_and_test(time, opt, model_hp, trial=None, return_model=True):
