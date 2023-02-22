@@ -11,16 +11,12 @@ class EarlyStopper:
         self.min_delta = min_delta
         self.counter = 0
         self.min_validation_loss = np.inf
-        self.testing_epoch = 5
+        self.testing_epoch = testing_epoch
 
     def early_stop(self, validation_loss):
         if validation_loss < self.min_validation_loss - self.min_delta:
             self.min_validation_loss = validation_loss
             self.counter = 0
-        elif validation_loss < self.min_validation_loss:
-            self.counter += self.testing_epoch
-            if self.counter >= self.patience:
-                return True
         elif validation_loss > (self.min_validation_loss + self.min_delta):
             self.counter += self.testing_epoch
             if self.counter >= self.patience:
@@ -101,7 +97,7 @@ def estimate_density(
 
     name = name + ".pth"
 
-    early_stopper = EarlyStopper(patience=10)
+    early_stopper = EarlyStopper(patience=15)
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=opt.lr,
@@ -129,7 +125,7 @@ def estimate_density(
 
     model.train()
     best_test_score = np.inf
-    # best_epoch = 0
+    best_epoch = 0
     if opt.verbose:
         e_iterator = trange(1, opt.epochs + 1)
     else:
@@ -144,6 +140,7 @@ def estimate_density(
             train_iterator = tqdm(range(0, n_data, bs))
         else:
             train_iterator = range(0, n_data, bs)
+
         for i in train_iterator:
             idx = batch_idx[i : (i + bs)]
             optimizer.zero_grad()
@@ -198,14 +195,14 @@ def estimate_density(
             )
             if test_score < best_test_score:
                 best_test_score = test_score
-                # best_epoch = epoch
+                best_epoch = epoch
                 if opt.verbose:
                     print(f"best model is now from epoch {epoch}")
                 if return_model:
                     torch.save(model.state_dict(), name)
-            # if epoch - best_epoch > 10:
-            #     for g in optimizer.param_groups:
-            #         g["lr"] = g["lr"] / 10
+            if epoch - best_epoch > 10:
+                for g in optimizer.param_groups:
+                    g["lr"] = g["lr"] / 10
             if early_stopper.early_stop(test_score):
                 break
 
