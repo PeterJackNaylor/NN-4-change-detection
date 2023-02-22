@@ -1,0 +1,42 @@
+configname: exp_config/kuma.yaml
+out: result/paper
+path: data/clippeddata/clippedMarco
+extension: txt
+epochs: 20
+trials: 10
+norm: one_minus
+single_method: [M, M+L1TD, M+L1TD+TVN, M+TVN]
+double_method: [M, M+TVN]
+feature_method: [--fourier, --siren, ""]
+lr: #log search
+  - 1.e-5 # min
+  - 1.e-1 # max
+wd: #log search
+  - 1.e-6 # min
+  - 1.e-4 # max
+bs: # power of 2 search
+  - 11 # 512 # min
+  - 14 # 2048 # max
+scale: # power of 2 search
+  - 0 # min
+  - 8 # max
+mapping_size: # power of 2 search
+  - 7 # min
+  - 11 # max
+lambda_discrete: #log search
+  - 1.e-5 # min
+  - 1.e+1 # max
+lambda_gradient_time: #log search
+  - 1.e-5 # min
+  - 1.e+1 # max
+lambda_tvn: #log search
+  - 1.e-5 # min
+  - 1.e+1 # max
+siren:
+  hidden_num: [1, 5]
+  hidden_dim: [6, 10] # power of 2 search
+  do_skip: [0, 1]
+loss_tvn: [l1]
+act: [tanh]
+arch: [skip-5]
+verbose: 0
