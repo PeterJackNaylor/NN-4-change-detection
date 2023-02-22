@@ -16,7 +16,9 @@ dependencies:
   - scikit-learn
   - tqdm
   - plotly
+  - optuna
   - pip:
     - plyfile
     - kaleido
+    - torchlars
     - pre-commit
