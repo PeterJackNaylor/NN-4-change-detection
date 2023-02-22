@@ -2,7 +2,7 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.metrics import confusion_matrix
 from sklearn.mixture import GaussianMixture as gmm
-from sklearn.metrics import roc_auc_score, jaccard_score
+from sklearn.metrics import roc_auc_score
 
 
 def compute_jaccard(ytrue, yhat):
@@ -67,10 +67,7 @@ def iou(y, diffz, thresh):
     y_pred = np.zeros_like(y)
     y_pred[diffz > thresh[1]] = 1
     y_pred[diffz < thresh[0]] = 2
-    # _, miou = compute_jaccard(y, y_pred)
-    # import pdb; pdb.set_trace()
-    test = jaccard_score(y, y_pred, average=None)
-    miou = (test[1] + test[2]) / 2
+    _, miou = compute_jaccard(y, y_pred)
     return y_pred, miou
 
 

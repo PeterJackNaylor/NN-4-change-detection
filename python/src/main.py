@@ -24,9 +24,9 @@ def main():
     model_hp.scale = 4
     model_hp.architecture = "skip-5"  # "Vlarge"
     model_hp.activation = "tanh"
-    model_hp.lr = 0.0001
-    model_hp.wd = 0.0005
-    opt.method = "M+L1TD"
+    model_hp.lr = 0.00005
+    model_hp.wd = 0.00005
+    opt.method = "M+L1TD+TVN"
     model_hp.L1_time_discrete = "L1TD" in opt.method
     model_hp.L1_time_gradient = "L1TG" in opt.method
     model_hp.tvn = "TVN" in opt.method
