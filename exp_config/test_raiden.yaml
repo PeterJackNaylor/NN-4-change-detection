@@ -1,6 +1,7 @@
 configname: exp_config/test_raiden.yaml
 out: result/test
 path: data/test/
+gtpath: ./data/full_data/
 extension: ply
 epochs: 20
 trials: 10

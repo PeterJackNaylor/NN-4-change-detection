@@ -18,8 +18,11 @@ def find_gt(dataname, path):
     cl0 = os.path.join(path, cl0)
     cl1 = os.path.join(path, cl1)
 
-    table0 = ply_to_npy(cl0)
-    table1 = ply_to_npy(cl0)
+    table0 = pd.DataFrame(ply_to_npy(cl0))
+    table0.columns = ["X", "Y", "Z", "la"]
+
+    table1 = pd.DataFrame(ply_to_npy(cl1))
+    table1.columns = ["X", "Y", "Z", "la"]
     return table0, table1
 
 
