@@ -38,7 +38,7 @@ def find_gt(dataname, path):
     method,
 ) = load_data(sys)
 
-gt0, gt1 = find_gt(sys.argv[-2])
+gt0, gt1 = find_gt(dataname, sys.argv[-2])
 
 xy_onz0 = gt0[["X", "Y"]].values.astype("float32")
 xy_onz1 = gt1[["X", "Y"]].values.astype("float32")
