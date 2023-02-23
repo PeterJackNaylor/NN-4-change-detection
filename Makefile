@@ -9,7 +9,7 @@ full_data_kuma:
 	nextflow run nextflow/main.nf -params-file exp_config/kuma.yaml -resume -profile kuma
 
 looting_kuma:
-	nextflow run nextflow/main_real_data.nf -params-file exp_config/kuma_looting.yaml -resume
+	nextflow run nextflow/main_real_data.nf -params-file exp_config/kuma_looting.yaml -resume -profile kuma
 
 full_data_test:
 	nextflow run nextflow/main.nf -params-file exp_config/test_raiden.yaml -resume -profile raiden
