@@ -61,5 +61,7 @@ def parser_f():
     args.p = read_yaml(args.yaml_file)
     if args.siren:
         args.p.siren = AttrDict(args.p.siren)
+        args.p.norm = "one_minus"
+
     args.p.verbose = args.p.verbose == 1
     return args

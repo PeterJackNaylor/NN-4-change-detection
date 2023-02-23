@@ -19,23 +19,33 @@ def main():
     model_hp.epochs = opt.p.epochs
 
     time = 0 if opt.csv1 else -1
-    model_hp.bs = 1024 * 16
-    model_hp.mapping_size = 512
-    model_hp.scale = 4
-    model_hp.architecture = "skip-5"  # "Vlarge"
-    model_hp.activation = "tanh"
-    model_hp.lr = 0.00005
-    model_hp.wd = 0.00005
-    opt.method = "M+L1TD+TVN"
+    model_hp.bs = 2**16
+    model_hp.scale = 256
+    model_hp.lr = 1e-4
+    opt.method = "M"
+    opt.p.norm = "one_minus"
+    if opt.siren:
+        print("Using siren")
+        model_hp.architecture = "siren"
+        model_hp.siren_hidden_num = 5
+        model_hp.siren_hidden_dim = 256
+        model_hp.siren_skip = True
+    else:
+        model_hp.mapping_size = 4
+        model_hp.architecture = "skip-5"  # "Vlarge"
+        model_hp.activation = "tanh"
+
     model_hp.L1_time_discrete = "L1TD" in opt.method
     model_hp.L1_time_gradient = "L1TG" in opt.method
     model_hp.tvn = "TVN" in opt.method
     if model_hp.L1_time_discrete:
         model_hp.lambda_discrete = 0.08
-    if model_hp.L1_time_gradient:
-        model_hp.lambda_gradient_time = 0.2
     if model_hp.tvn:
         model_hp.lambda_tvn = 0.005
+    if model_hp.L1_time_gradient:
+        model_hp.lambda_tvn_t = 0.005
+        model_hp.lambda_tvn_t_sd = 0.01
+    if model_hp.tvn or model_hp.L1_time_gradient:
         model_hp.loss_tvn = "l1"
 
     model, model_hp = train_and_test(time, opt, model_hp)

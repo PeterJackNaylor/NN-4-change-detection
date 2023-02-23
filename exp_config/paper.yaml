@@ -11,12 +11,9 @@ feature_method: [--fourier, --siren, ""]
 lr: #log search
   - 1.e-5 # min
   - 1.e-1 # max
-wd: #log search
-  - 1.e-5 # min
-  - 1.e+1 # max
 bs: # power of 2 search
-  - 11 # 512 # min
-  - 14 # 2048 # max
+  - 11 # 2048 # min
+  - 14 # 16384 # max
 scale: # power of 2 search
   - 0 # min
   - 8 # max
@@ -33,10 +30,9 @@ lambda_tvn: #log search
   - 1.e-5 # min
   - 1.e+1 # max
 siren:
-  hidden_num: [1, 5]
-  hidden_dim: [6, 10] # power of 2 search
-  do_skip: [0, 1]
-loss_tvn: [l1]
+  hidden_num: [4, 6]
+  hidden_dim: [7, 9] # power of 2 search
+  do_skip: [1]
 act: [tanh]
 arch: [skip-5]
 verbose: 0

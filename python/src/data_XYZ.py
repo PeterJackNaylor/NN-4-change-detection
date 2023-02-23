@@ -91,6 +91,9 @@ class XYZ(Dataset):
                 elif normalize == "one_minus":
                     m = (vect.max() + vect.min()) / 2
                     s = (vect.max() - vect.min()) / 2
+                elif normalize == "one_zero":
+                    m = vect.min()
+                    s = vect.max() - vect.min()
                 nv_l.append((m, s))
             self.nv = nv_l
         nv = self.nv

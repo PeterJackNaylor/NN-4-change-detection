@@ -48,6 +48,10 @@ z1_on1 = predict_z(
 
 diff_z_on1 = z1_on1 - z0_on1
 diff_z_on1 = np.nan_to_num(diff_z_on1)
+
+print("Filtering positive change")
+diff_z_on1[diff_z_on1 > 0] = 0
+
 label = "label" in table1.columns
 if label:
     y_on1 = table1["label"].values

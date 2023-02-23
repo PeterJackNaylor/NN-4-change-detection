@@ -30,14 +30,13 @@ process two_density_estimation {
         """
 }
 
-process = file("python/src/process_diff.py")
-
 process post_processing {
 
     label "gpu"
     publishDir "${params.out}/double/${NAME}/", mode: 'symlink', overwrite: true
 
     input:
+        path PY
         tuple val(NAME), path(NPZ), path(WEIGHTS), path(FILE), val(METHOD)
         path CONFIG
 
@@ -47,8 +46,47 @@ process post_processing {
 
     script:
         """
-        python $process double_${METHOD[0]} ${WEIGHTS[0]} ${WEIGHTS[1]} ${FILE[0]} ${FILE[1]} ${NPZ[0]} ${NPZ[1]} ${CONFIG}
+        python $PY double_${METHOD[0]} ${WEIGHTS[0]} ${WEIGHTS[1]} ${FILE[0]} ${FILE[1]} ${NPZ[0]} ${NPZ[1]} ${CONFIG}
         """
+}
+
+process = file("python/src/reconstruction_mse.py")
+
+process post_processing_mse {
+
+    label "gpu"
+    publishDir "${params.out}/double/${NAME}/", mode: 'symlink', overwrite: true
+
+    input:
+        tuple val(NAME), path(NPZ), path(WEIGHTS), path(FILE), val(METHOD)
+        path GTPATH
+        path CONFIG
+
+    output:
+        path("*.csv")
+        path("*.png")
+
+    script:
+        """
+        python $process double_${METHOD[0]} ${WEIGHTS[0]} ${WEIGHTS[1]} ${FILE[0]} ${FILE[1]} ${NPZ[0]} ${NPZ[1]} ${GTPATH} ${CONFIG}
+        """
+}
+workflow two_density_rd {
+
+    take:
+        data
+        feature_method
+        method
+        config
+        py
+
+    main:
+        two_density_estimation(data, feature_method, method, config)
+        two_density_estimation.out[0].groupTuple().set{grouped}
+        post_processing(py, grouped, config)
+
+    emit:
+        post_processing.out[0]
 }
 
 workflow two_density {
@@ -58,12 +96,16 @@ workflow two_density {
         feature_method
         method
         config
+        py
+        path
 
     main:
         two_density_estimation(data, feature_method, method, config)
         two_density_estimation.out[0].groupTuple().set{grouped}
-        post_processing(grouped, config)
+        post_processing(py, grouped, config)
+        post_processing_mse(grouped, path, config)
 
     emit:
         post_processing.out[0]
+        post_processing_mse.out[0]
 }
