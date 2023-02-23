@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm, trange
 import optuna
-from torchlars import LARS
+# from torchlars import LARS
 
 
 class EarlyStopper:
@@ -103,7 +103,7 @@ def estimate_density(
         model.parameters(),
         lr=opt.lr,
     )
-    optimizer = LARS(optimizer=optimizer, eps=1e-8, trust_coef=0.001)
+    # optimizer = LARS(optimizer=optimizer, eps=1e-8, trust_coef=0.001)
 
     L1_time_discrete = opt.L1_time_discrete
     if L1_time_discrete:
