@@ -1,6 +1,7 @@
 configname: exp_config/paper.yaml
 out: result/paper
 path: data/full_data/
+gtpath: data/full_data/
 extension: ply
 epochs: 50
 trials: 60

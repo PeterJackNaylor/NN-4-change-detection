@@ -9,7 +9,7 @@ feature_method = params.feature_method
 single_method = params.single_method
 double_method = params.double_method
 config = file(params.configname)
-datapath = file(params.path)
+datapath = file(params.gtpath)
 process_py = file("python/src/process_diff.py")
 
 workflow {
