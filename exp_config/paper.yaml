@@ -17,7 +17,7 @@ bs: # power of 2 search
   - 14 # 16384 # max
 scale: # power of 2 search
   - 0 # min
-  - 8 # max
+  - 10 # max
 mapping_size: # power of 2 search
   - 7 # min
   - 11 # max
