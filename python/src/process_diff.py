@@ -1,126 +1,84 @@
 import sys
 import numpy as np
-from utils_diff import load_csv_weight_npz, define_grid, predict_z
-from utils import compute_iou
-from plotpoint import fig_3d
+from utils_diff import load_data, predict_z
+from utils import compute_iou, compute_auc_mc, compute_mse, gmm_predict
+from plotpoint import scatter2d, twod_distribution
 import pandas as pd
 
-double = sys.argv[1]
-if double == "double":
-    weight0 = sys.argv[2]
-    weight1 = sys.argv[3]
 
-    csv0 = sys.argv[4]
-    csv1 = sys.argv[5]
+(
+    table0,
+    table1,
+    model0,
+    model1,
+    nv0,
+    nv1,
+    time0,
+    time1,
+    dataname,
+    normalize,
+    fs,
+    method,
+) = load_data(sys)
 
-    npz0 = sys.argv[6]
-    npz1 = sys.argv[7]
+xy_onz0 = table0[["X", "Y"]].values.astype("float32")
+xy_onz1 = table1[["X", "Y"]].values.astype("float32")
 
-    dataname = weight0.split("__")[0]
-    tag = int(weight0.split("__")[0][-1])
-
-    n0 = weight0.split(".p")[0]
-    n1 = weight1.split(".p")[0]
-
-    if tag != 1:
-        w0_file = weight0
-        w1_file = weight1
-        csvfile0 = csv0
-        csvfile1 = csv1
-        npz_0 = npz0
-        npz_1 = npz1
-        name0 = n0
-        name1 = n1
-    else:
-        w0_file = weight1
-        w1_file = weight0
-        csvfile0 = csv1
-        csvfile1 = csv0
-        npz_0 = npz1
-        npz_1 = npz0
-        name0 = n1
-        name1 = n0
-    time = time0 = time1 = -1
-
-    table0, model0, B0, nv0 = load_csv_weight_npz(
-        csvfile0, None, w0_file, npz_0, name0, time
-    )
-    table1, model1, B1, nv1 = load_csv_weight_npz(
-        csvfile1, None, w1_file, npz_1, name1, time
-    )
-else:
-
-    weight = sys.argv[2]
-
-    csvfile0 = sys.argv[3]
-    csvfile1 = sys.argv[4]
-
-    npz = sys.argv[5]
-    time = 1
-
-    dataname = weight.split("__")[0]
-    name = weight.split(".p")[0]
-
-    table, model, B, nv = load_csv_weight_npz(
-        csvfile0, csvfile1, weight, npz, name, time
-    )
-    table0 = table[table["T"] == 0]
-    table1 = table[table["T"] == 1]
-    model0, model1 = model, model
-    B0, B1 = B, B
-    nv0, nv1 = nv, nv
-    time0 = 0.0
-    time1 = 1.0
-
-z0_n = table0.shape[0]
-z1_n = table1.shape[0]
-
-labels_1_n = (table1["label"].astype(int).values == 1).sum()
-labels_2_n = (table1["label"].astype(int).values == 2).sum()
-
-grid_indices = define_grid(table0, table1, step=2)
-xy_grid = grid_indices.copy()  # .astype("float32")
-xy_onz1 = table1[["X", "Y"]].values  # .astype("float32")
-
-z0_on1 = predict_z(model0, B0, nv0, xy_onz1, time=time0)
-z1_on1 = predict_z(model1, B1, nv1, xy_onz1, time=time1)
-
-diff_z_on1 = z1_on1 - z0_on1
-
-z0_ongrid = predict_z(model0, B0, nv0, xy_grid, time=time0)
-z1_ongrid = predict_z(model1, B1, nv1, xy_grid, time=time1)
-
-
-diff_z = z1_ongrid - z0_ongrid
-y_on1 = table1["label"].values
-# compute IoU
-iou_bin, thresh_bin, pred_bin, iou_mc, thresh_mc, pred_mc = compute_iou(
-    diff_z_on1, y_on1
+z0_on0 = predict_z(
+    model0,
+    nv0,
+    xy_onz0,
+    normalize=normalize,
+    time=time0,
+)
+z0_on1 = predict_z(
+    model0,
+    nv0,
+    xy_onz1.copy(),
+    normalize=normalize,
+    time=time0,
+)
+z1_on1 = predict_z(
+    model1,
+    nv1,
+    xy_onz1.copy(),
+    normalize=normalize,
+    time=time1,
 )
 
+diff_z_on1 = z1_on1 - z0_on1
+diff_z_on1 = np.nan_to_num(diff_z_on1)
+label = "label" in table1.columns
+if label:
+    y_on1 = table1["label"].values
 
-table1_copy = table1.copy()
-table1_copy.X = table1_copy.X.round().astype("int")
-table1_copy.Y = table1_copy.Y.round().astype("int")
-idx = table1_copy[["X", "Y"]].drop_duplicates().index
-table1_copy = table1_copy.loc[idx]
+    # compute IoU
+    iou_b, thresh_b, pred = compute_iou(diff_z_on1, y_on1)
+    iou_gmm, thresh_gmm, pred_gmm = compute_iou(diff_z_on1, y_on1, use_gmm=True)
+    auc_score = compute_auc_mc(diff_z_on1, y_on1)
+    print("best threshold:", iou_b)
+    print("threshold with gmm", iou_gmm)
+    print("auc_scores:", auc_score)
+else:
+    pred_gmm, thresh_gmm = gmm_predict(diff_z_on1)
 
-grid_pd = pd.DataFrame(grid_indices).astype(int)
-grid_pd.columns = ["X", "Y"]
-result = pd.merge(grid_pd, table1_copy, on=["X", "Y"], how="left")
-# result.label = result.label.fill_na(0)
+mse0 = compute_mse(z0_on0, table0[["Z"]].values[:, 0])
+mse1 = compute_mse(z1_on1, table1[["Z"]].values[:, 0])
+
+print("MSE PC0:", mse0)
+print("MSE PC1:", mse1)
 
 
 size1 = table1.X.shape[0]
 
 if size1 > 1e6:
-    factor = 10
+    factor = 100
 elif size1 > 5e5:
-    factor = 5
+    factor = 20
 elif size1 > 1e5:
-    factor = 1
+    factor = 5
 elif size1 > 5e4:
-    factor = 1
+    factor = 2
 elif size1 > 1e4:
     factor = 1
 else:
@@ -131,64 +89,177 @@ np.random.shuffle(idx)
 idx = idx[: size1 // factor]
 
 sub_X = table1.X.values[idx]
-sub_Y = table1.X.values[idx]
+sub_Y = table1.Y.values[idx]
 sub_Z = table1.Z.values[idx]
 sub_diff_z_on1 = diff_z_on1[idx]
-sub_y_on1 = y_on1[idx]
 sub_z1_on1 = z1_on1[idx]
 sub_z0_on1 = z0_on1[idx]
-sub_pred_mc = pred_mc[idx]
+sub_pred_gmm = pred_gmm[idx]
 
-fig = fig_3d(sub_X, sub_Y, sub_diff_z_on1, sub_y_on1)
-name_png = f"diff_{dataname}_labels_on_z1.png"
-fig.write_image(name_png)
+if label:
+    sub_y_on1 = y_on1[idx]
+    sub_pred = pred[idx]
 
-fig = fig_3d(sub_X, sub_Y, sub_diff_z_on1, sub_pred_mc)
-name_png = f"diff_{dataname}_pred_on_z1.png"
-fig.write_image(name_png)
+try:
+    fig = twod_distribution(sub_diff_z_on1)
+    name_png = f"{dataname}_diffZ1_distribution.png"
+    fig.write_image(name_png)
+except ValueError and np.linalg.LinAlgError:
+    pass
 
-fig = fig_3d(sub_X, sub_Y, sub_Z, sub_pred_mc)
-name_png = f"{dataname}_z1_on_z1.png"
-fig.write_image(name_png)
-
-fig = fig_3d(table1.X, table1.Y, sub_z1_on1, sub_pred_mc)
-name_png = f"{dataname}_predz1_on_z1.png"
-fig.write_image(name_png)
-
-fig = fig_3d(table1.X, table1.Y, sub_z0_on1, sub_pred_mc)
-name_png = f"{dataname}_predz0_on_z1.png"
-fig.write_image(name_png)
+if label:
+    try:
+        fig = twod_distribution(sub_diff_z_on1, sub_y_on1)
+        name_png = f"{dataname}_diffZ1_distribution_by_label.png"
+        fig.write_image(name_png)
+    except ValueError and np.linalg.LinAlgError:
+        pass
 
 
-fig = fig_3d(grid_indices[:, 0], grid_indices[:, 1], diff_z, result.label)
-name_png = f"diff_{dataname}_labels.png"
-fig.write_image(name_png)
+try:
+    fig = twod_distribution(sub_diff_z_on1, sub_pred_gmm)
+    name_png = f"{dataname}_diffZ1_distribution_by_gmmlabel.png"
+    fig.write_image(name_png)
+except ValueError and np.linalg.LinAlgError:
+    pass
 
-fig = fig_3d(grid_indices[:, 0], grid_indices[:, 1], diff_z, diff_z)
-name_png = f"diff_{dataname}.png"
-fig.write_image(name_png)
+try:
+    name_png = f"{dataname}_diffZ1.png"
+    fig = scatter2d(sub_X, sub_Y, sub_diff_z_on1)
+    fig.write_image(name_png)
+except ValueError:
+    pass
 
-# compute IoU
+if label:
+    try:
+        name_png = f"{dataname}_diffZ1_and_label.png"
+        fig = scatter2d(sub_X, sub_Y, sub_diff_z_on1, sub_y_on1)
+        fig.write_image(name_png)
+    except ValueError:
+        pass
 
-name_npz = f"{double}_{dataname}_results.npz"
+    try:
+        name_png = f"{dataname}_diffZ1_and_prediction.png"
+        fig = scatter2d(sub_X, sub_Y, sub_diff_z_on1, sub_pred)
+        fig.write_image(name_png)
+    except ValueError:
+        pass
 
-np.savez(
-    name_npz,
-    indices=grid_indices,
-    x1=table1.X.values,
-    y1=table1.Y.values,
-    z0_on1=z0_on1,
-    z1_on1=z1_on1,
-    z0_ongrid=z0_ongrid,
-    z1_ongrid=z1_ongrid,
-    labels_on1=y_on1,
-    labels_ongrid=result.label,
-    IoU_mc=iou_mc,
-    thresh_mc=thresh_mc,
-    IoU_bin=iou_bin,
-    thresh_bin=thresh_bin,
-    z0_n=z0_n,
-    z1_n=z1_n,
-    labels_1_n=labels_1_n,
-    labels_2_n=labels_2_n,
-)
+try:
+    name_png = f"{dataname}_diffZ1_and_gmmprediction.png"
+    fig = scatter2d(sub_X, sub_Y, sub_diff_z_on1, sub_pred_gmm)
+    fig.write_image(name_png)
+except ValueError:
+    pass
+
+
+try:
+    fig = scatter2d(sub_X, sub_Y, sub_Z)
+    name_png = f"{dataname}_Z1.png"
+    fig.write_image(name_png)
+except ValueError:
+    pass
+
+try:
+    fig = scatter2d(sub_X, sub_Y, sub_Z, sub_pred_gmm)
+    name_png = f"{dataname}_Z1_and_gmmprediction.png"
+    fig.write_image(name_png)
+except ValueError:
+    pass
+
+if label:
+    try:
+        fig = scatter2d(sub_X, sub_Y, sub_Z, sub_y_on1)
+        name_png = f"{dataname}_Z1_and_label.png"
+        fig.write_image(name_png)
+    except ValueError:
+        pass
+
+    try:
+        fig = scatter2d(sub_X, sub_Y, sub_Z, sub_pred)
+        name_png = f"{dataname}_Z1_and_prediction.png"
+        fig.write_image(name_png)
+    except ValueError:
+        pass
+
+try:
+    fig = scatter2d(sub_X, sub_Y, sub_z1_on1)
+    name_png = f"{dataname}_predictionZ1.png"
+    fig.write_image(name_png)
+except ValueError:
+    pass
+
+try:
+    fig = scatter2d(sub_X, sub_Y, sub_z1_on1, sub_pred_gmm)
+    name_png = f"{dataname}_predictionZ1_and_gmmprediction.png"
+    fig.write_image(name_png)
+except ValueError:
+    pass
+
+if label:
+    try:
+        fig = scatter2d(sub_X, sub_Y, sub_z1_on1, sub_y_on1)
+        name_png = f"{dataname}_predictionZ1_and_label.png"
+        fig.write_image(name_png)
+    except ValueError:
+        pass
+
+    try:
+        fig = scatter2d(sub_X, sub_Y, sub_z1_on1, sub_pred)
+        name_png = f"{dataname}_predictionZ1_and_prediction.png"
+        fig.write_image(name_png)
+    except ValueError:
+        pass
+
+
+try:
+    fig = scatter2d(sub_X, sub_Y, sub_z0_on1)
+    name_png = f"{dataname}_predictionZ0.png"
+    fig.write_image(name_png)
+except ValueError:
+    pass
+
+try:
+    fig = scatter2d(sub_X, sub_Y, sub_z0_on1, sub_pred_gmm)
+    name_png = f"{dataname}_predictionZ0_and_gmmprediction.png"
+    fig.write_image(name_png)
+except ValueError:
+    pass
+
+if label:
+    try:
+        fig = scatter2d(sub_X, sub_Y, sub_z0_on1, sub_y_on1)
+        name_png = f"{dataname}_predictionZ0_and_label.png"
+        fig.write_image(name_png)
+    except ValueError:
+        pass
+
+    try:
+        fig = scatter2d(sub_X, sub_Y, sub_z0_on1, sub_pred)
+        name_png = f"{dataname}_predictionZ0_and_prediction.png"
+        fig.write_image(name_png)
+    except ValueError:
+        pass
+
+
+name_csv = f"{method}_{dataname}_results.csv"
+
+scores = {
+    "method": method,
+    "normalize": normalize,
+    "fs": fs,
+    "threshold_gmm_low": thresh_gmm[0],
+    "threshold_gmm_high": thresh_gmm[1],
+    "len(threshold_gmm)": len(thresh_gmm),
+    "MSE_PC0": mse0,
+    "MSE_PC1": mse1,
+}
+if label:
+    scores["AUC_nochange"] = auc_score["No change"]
+    scores["AUC_addition"] = auc_score["Addition"]
+    scores["AUC_deletion"] = auc_score["Deletion"]
+    scores["IoU_gmm"] = iou_gmm
+    scores["IoU_best"] = iou_b
+    scores["threshold_best_low"] = thresh_b[0]
+    scores["threshold_best_high"] = thresh_b[1]
+pd.DataFrame(scores, index=[dataname]).to_csv(name_csv)

@@ -1,131 +1,143 @@
-import pandas as pd
 import numpy as np
 from function_estimation import (
-    parser_f,
-    return_dataset,
-    return_dataset_prediction,
     estimate_density,
     predict_loop,
 )
-from architectures import Model
-from plotpoint import fig_3d  # plot_surface, plot_tri_grid
-import os
+from parser import parser_f, AttrDict
+from data_XYZ import return_dataset, return_dataset_prediction
+from architectures import ReturnModel, gen_b
+from plotpoint import scatter2d  # plot_surface, plot_tri_grid
 
 
 def main():
     opt = parser_f()
+    model_hp = AttrDict()
 
-    bs = opt.bs
-    csv0 = opt.csv0
-    csv1 = opt.csv1
-    time = 0 if csv1 else -1
+    model_hp.fourier = opt.fourier
+    model_hp.siren = opt.siren
+    model_hp.verbose = opt.p.verbose
+    model_hp.epochs = opt.p.epochs
 
-    workers = opt.workers
-    fourier = opt.fourier
-    scale = opt.scale
-    mapping_size = opt.mapping_size
-    normalize = opt.normalize
-    weight_file = opt.name + ".pth"
-    coord_file = opt.name + ".npz"
-    csv_file = opt.name + ".csv"
-    activation = opt.activation
-    architecture = opt.arch
-    if architecture == "SIREN":
-        act_last = opt.act_last
-        import pdb; pdb.set_trace()
-    train, test, B, nv = return_dataset(
-        csv0,
-        csv1,
-        bs=bs,
-        workers=workers,
-        mapping_size=mapping_size,
-        fourier=fourier,
-        normalize=normalize,
-        scale=scale,
+    time = 0 if opt.csv1 else -1
+    model_hp.bs = 1024 * 16
+    model_hp.mapping_size = 512
+    model_hp.scale = 4
+    # model_hp.architecture = "skip-5"  # "Vlarge"
+    # model_hp.activation = "relu"
+    model_hp.lr = 0.0001
+    model_hp.wd = 0.00005
+    opt.method = "M+L1TD"
+    opt.p.norm = "one_minus"
+
+    model_hp.L1_time_discrete = "L1TD" in opt.method
+    model_hp.L1_time_gradient = "L1TG" in opt.method
+    model_hp.tvn = "TVN" in opt.method
+    if model_hp.L1_time_discrete:
+        model_hp.lambda_discrete = 0.08
+    if model_hp.L1_time_gradient:
+        model_hp.lambda_gradient_time = 0.2
+    if model_hp.tvn:
+        model_hp.lambda_tvn = 0.005
+        model_hp.loss_tvn = "l1"
+
+    model, model_hp = train_and_test(time, opt, model_hp)
+
+    pred_test_save(model, model_hp, time, opt)
+
+
+def train_and_test(time, opt, model_hp, trial=None, return_model=True):
+
+    train, test, nv = return_dataset(
+        opt.csv0,
+        opt.csv1,
+        bs=model_hp.bs,
+        normalize=opt.p.norm,
         time=not time,
-        gradient_regul=opt.gradient_regul,
+        method=opt.method,
+    )
+    model_hp.nv = nv
+    if model_hp.fourier:
+        model_hp.B = gen_b(
+            model_hp.mapping_size,
+            model_hp.scale,
+            train.input_size,
+        )
+
+    model = ReturnModel(
+        train.input_size,
+        arch=model_hp.architecture,
+        args=model_hp,
     )
 
-    model = Model(train.input_size, arch=architecture, activation=activation)
-    # model = model.float()
     model = model.cuda()
-    hp = {"lr": opt.lr, "epoch": opt.epochs, "wd": opt.wd}
-    model, best_score = estimate_density(
+
+    outputs = estimate_density(
         train,
         test,
         model,
-        hp,
-        weight_file,
-        lambda_t=opt.lambda_t,
-        gradient_regul=opt.gradient_regul,
+        model_hp,
+        opt.name,
+        trial=trial,
+        return_model=return_model,
     )
+    if return_model:
+        model, best_score = outputs
+        model_hp.best_score = best_score
+        return model, model_hp
+    else:
+        model_hp.best_score = outputs
+        return model_hp
 
-    ds_predict0, xyz0 = return_dataset_prediction(
-        csv0,
-        csv1,
-        bs=bs,
-        workers=workers,
-        fourier=fourier,
-        B=B,
-        nv=nv,
+
+def pred_test_save(
+    model,
+    model_hp,
+    time,
+    opt,
+):
+    nv = model_hp.nv
+    xyz0 = return_dataset_prediction(
+        opt.csv0,
+        opt.csv1,
+        nv=model_hp.nv,
         time=time,
     )
-    predictions0 = predict_loop(ds_predict0, model.eval())
 
-    xy = xyz0.indices
+    predictions0 = predict_loop(xyz0, model_hp.bs, model.eval())
+
+    xy = np.array(xyz0.samples.cpu())
     x = xy[:, 0] * nv[0][1] + nv[0][0]
     y = xy[:, 1] * nv[1][1] + nv[1][0]
     f_z0 = np.array(predictions0.cpu())
     f_z0 = f_z0 * nv[2][1] + nv[2][0]
 
-    if csv1:
-        ds_predict1, xyz1 = return_dataset_prediction(
-            csv0,
-            csv1,
-            bs=bs,
-            workers=workers,
-            fourier=fourier,
-            B=B,
+    if opt.csv1:
+        xyz1 = return_dataset_prediction(
+            opt.csv0,
+            opt.csv1,
             nv=nv,
             time=1,
         )
 
-        predictions1 = predict_loop(ds_predict1, model.eval())
+        predictions1 = predict_loop(xyz1, model_hp.bs, model.eval())
         f_z1 = np.array(predictions1.cpu())
         f_z1 = f_z1 * nv[2][1] + nv[2][0]
+    if "B" in model_hp.keys():
+        model_hp.B = np.array(model_hp.B.cpu())
 
-    info = {
-        "wd": os.getcwd(),
-        "name": opt.name,
-        "arch": architecture,
-        "score": best_score,
-    }
-    pd.DataFrame(info, index=[0]).to_csv(csv_file)
-    if csv1:
-        png_snap0 = opt.name + "0.png"
-        png_snap1 = opt.name + "1.png"
+    np.savez(
+        opt.name + ".npz",
+        **model_hp,
+    )
 
-        fig = fig_3d(x, y, f_z1, f_z1)
-        fig.write_image(png_snap1)
-        np.savez(
-            coord_file,
-            x=x,
-            y=y,
-            z0=f_z0,
-            z2=f_z1,
-            B=B,
-            nv=nv,
-            score=best_score,
-        )
-    else:
-        png_snap0 = opt.name + ".png"
-        np.savez(coord_file, x=x, y=y, z=f_z0, B=B, nv=nv, score=best_score)
-
-    fig = fig_3d(x, y, f_z0, f_z0)
+    fig = scatter2d(x, y, f_z0)
+    png_snap0 = opt.name + "0.png"
     fig.write_image(png_snap0)
 
-    # f_z = f_z.reshape((xyz.xmax-xyz.xmin, xyz.ymax-xyz.ymin), order='F')
-    # plot_surface(xyz.xmin, xyz.xmax, xyz.ymin, xyz.ymax, f_z)
+    if opt.csv1:
+        png_snap1 = opt.name + "1.png"
+        fig = scatter2d(x, y, f_z1)
+        fig.write_image(png_snap1)
 
 
 if __name__ == "__main__":

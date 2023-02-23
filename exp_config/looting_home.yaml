@@ -1,9 +1,9 @@
-configname: exp_config/home.yaml
-out: result/home
-path: data/clippeddata/clippedMarco
+configname: exp_config/looting_home.yaml
+out: result/home_looting
+path: data/looting_activity/cambodia_1_named/*
 extension: txt
-epochs: 50
-trials: 5
+epochs: 10
+trials: 3
 norm: "one_minus"
 single_method: [M+L1TD+TVN] #, M+L1TG M , M+L1TD, , M+TVN
 double_method: [] # [M, M+TVN]

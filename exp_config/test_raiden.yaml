@@ -1,0 +1,29 @@
+configname: exp_config/test_raiden.yaml
+out: result/test
+path: data/test/
+extension: ply
+epochs: 50
+trials: 10
+norm: one_minus
+single_method: [None, L1_diff]
+fourier: [--fourier]
+lr: #log search
+  - 1.e-5 # min
+  - 1.e-1 # max
+wd: #log search
+  - 1.e-5 # min
+  - 1.e+1 # max
+bs: # power of 2 search
+  - 9 # 512 # min
+  - 12 # 2048 # max
+scale: # power of 2 search
+  - 0 # min
+  - 5 # max
+mapping_size: # power of 2 search
+  - 7 # min
+  - 10 # max
+lambda_t: #log search
+  - 1.e-5 # min
+  - 1.e+1 # max
+act: [tanh, relu]
+arch: [default, default-BN, Vlarge]

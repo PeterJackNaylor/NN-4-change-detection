@@ -1,5 +1,5 @@
 
-include { prepare_data } from './data_preparation.nf'
+include { prepare_txt_real_data } from './data_preparation.nf'
 include { two_density } from './pipeline_double_density.nf'
 include { one_density } from './pipeline_single_density.nf'
 
@@ -14,8 +14,13 @@ config = file(params.configname)
 workflow {
 
     main:
-        prepare_data(params.path, params.extension)
-        one_density(prepare_data.out[0], feature_method, single_method, config)
-        two_density(prepare_data.out[1], feature_method, double_method, config)
+        prepare_txt_real_data(params.path)
+        prepare_txt_real_data.out[0] .set{ppC}
+        prepare_txt_real_data.out[1] .set{pC}
+
+
+        two_density(pC, feature_method, double_method, config)
+        one_density(ppC, feature_method, single_method, config)
+
         two_density.out.concat(one_density.out).collectFile(name: "${params.out}/benchmark.csv", skip: 1, keepHeader: true)
 }

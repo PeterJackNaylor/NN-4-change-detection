@@ -1,102 +1,181 @@
 import pandas as pd
 import numpy as np
 import torch
-from function_estimation import (
-    input_mapping,
-    predict_loop,
-    DataLoader,
-)
-from architectures import Model
-from math import ceil, floor
+from function_estimation import predict_loop
+from data_XYZ import XYZ_predefinedgrid
+from architectures import ReturnModel
+from parser import read_yaml, AttrDict
 
 
-def load_csv_weight_npz(csv_file0, csv_file1, weight, npz, name, time=-1):
+def clean_hp(d):
+    for k in d.keys():
+        if k in ["fourier", "siren", "siren_skip"]:
+            d[k] = bool(d[k])
+        elif k in []:
+            d[k] = float(d[k])
+        elif k in [
+            "bs",
+            "scale",
+            "siren_hidden_num",
+            "siren_hidden_num",
+            "siren_hidden_dim",
+        ]:
+            d[k] = int(d[k])
+        elif k in ["architecture", "activation"]:
+            d[k] = str(d[k])
+        elif k == "B":
+            d.B = torch.tensor(d.B).to("cuda")
+    return d
 
-    table = pd.read_csv(csv_file0)[["X", "Y", "Z", "label_ch"]]
-    table.columns = ["X", "Y", "Z", "label"]
+
+def load_csv_weight_npz(csv_file0, csv_file1, weight, npz, time=-1):
+
+    table = pd.read_csv(csv_file0)
+    label = "label_ch" in table.columns
+    if label:
+        columns = ["X", "Y", "Z", "label_ch"]
+    else:
+        columns = ["X", "Y", "Z"]
+    table = table[columns]
+    if label:
+        table.columns = ["X", "Y", "Z", "label"]
     table["T"] = 0
     if csv_file1:
-        table1 = pd.read_csv(csv_file1)[["X", "Y", "Z", "label_ch"]]
-        table1.columns = ["X", "Y", "Z", "label"]
+        table1 = pd.read_csv(csv_file1)[columns]
+        if label:
+            table1.columns = ["X", "Y", "Z", "label"]
         table1["T"] = 1
         table = pd.concat([table, table1], axis=0)
     table = table.reset_index(drop=True)
 
-    four_opt = name.split("FOUR=")[1].split("__")[0]
-
-    mappingsize = int(name.split("MAPPINGSIZE=")[1].split("_")[0])
-    if four_opt == "--fourier":
-        input_size = mappingsize * 2
-    else:
-        input_size = 3 if time != -1 else 2
-
-    act = name.split("ACT=")[1].split("_")[0]
-    arch = name.split("ARCH=")[1].split("_")[0]
-
-    model = Model(input_size, arch=arch, activation=act)
-    model.load_state_dict(torch.load(weight))
     npz = np.load(npz)
-    B = npz["B"]
-    nv = npz["nv"]
-    return table, model, B, nv
+    hp = AttrDict(npz)
+    hp = clean_hp(hp)
 
+    input_size = 3 if time != -1 else 2
 
-class indice_iterator:
-    def __init__(self, indices, B, nv, time):
-        self.indices = indices
-        self.B = B
-        self.time = time
-        for i in range(2):
-            self.indices[:, i] = (self.indices[:, i] - nv[i][0]) / nv[i][1]
-
-    def __len__(self):
-        return len(self.indices)
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-        x, y = self.indices[idx]
-        if self.time != -1:
-            sample = np.array([x, y, self.time])
-        else:
-            sample = np.array([x, y])
-        sample = self.fourier_transform(sample)
-
-        sample = torch.tensor(sample).float()
-        return sample
-
-    def fourier_transform(self, sample):
-        t_sample = input_mapping(sample, self.B)
-        return t_sample
-
-
-def define_grid(table0, table1, step=2):
-    xmin = min(floor(table0.X.min()), floor(table1.X.min()))
-    xmax = max(ceil(table0.X.max()), floor(table1.X.max()))
-    ymin = min(floor(table0.Y.min()), floor(table1.Y.min()))
-    ymax = max(ceil(table0.Y.max()), floor(table1.Y.max()))
-    xr, yr = np.arange(xmin, xmax, step), np.arange(ymin, ymax, step)
-    xx, yy = np.meshgrid(xr, yr)
-
-    xx = xx.astype(float)
-    yy = yy.astype(float)
-    indices = np.vstack([xx.ravel(), yy.ravel()]).T
-    return indices
-
-
-def predict_z(model, B, nv, grid_indices, bs=2048, workers=1, time=0):
-    iterator = indice_iterator(grid_indices.copy(), B, nv, time)
-    loader = DataLoader(
-        iterator,
-        batch_size=bs,
-        shuffle=False,
-        num_workers=workers,
-        pin_memory=True,
-        drop_last=False,
+    model = ReturnModel(
+        input_size,
+        arch=str(hp.architecture),
+        args=hp,
     )
-    model.eval()
+    model.load_state_dict(torch.load(weight))
+    return table, model, hp
+
+
+def load_data(lp):
+    yaml_file = read_yaml(lp.argv[-1])
+    normalize = yaml_file.norm
+    method = lp.argv[1]
+    if "double" in method:
+        weight0 = lp.argv[2]
+        weight1 = lp.argv[3]
+
+        csv0 = lp.argv[4]
+        csv1 = lp.argv[5]
+
+        npz0 = lp.argv[6]
+        npz1 = lp.argv[7]
+
+        dataname = weight0.split("__")[0][:-1]
+        tag = int(weight0.split("__")[0][-1])
+
+        if tag != 1:
+            w0_file = weight0
+            w1_file = weight1
+            csvfile0 = csv0
+            csvfile1 = csv1
+            npz_0 = npz0
+            npz_1 = npz1
+        else:
+            w0_file = weight1
+            w1_file = weight0
+            csvfile0 = csv1
+            csvfile1 = csv0
+            npz_0 = npz1
+            npz_1 = npz0
+        time = time0 = time1 = -1
+
+        table0, model0, hp0 = load_csv_weight_npz(
+            csvfile0,
+            None,
+            w0_file,
+            npz_0,
+            time,
+        )
+        table1, model1, hp1 = load_csv_weight_npz(
+            csvfile1,
+            None,
+            w1_file,
+            npz_1,
+            time,
+        )
+        nv0, nv1 = hp0.nv, hp1.nv
+
+        if hp0.fourier:
+            fs = "FourierBasis"
+        elif hp0.siren:
+            fs = "SIREN"
+        else:
+            fs = "None"
+    else:
+
+        weight = lp.argv[2]
+
+        csvfile0 = lp.argv[3]
+        csvfile1 = lp.argv[4]
+
+        npz = lp.argv[5]
+        time = 1
+
+        dataname = weight.split("__")[0]
+
+        table, model, hp = load_csv_weight_npz(
+            csvfile0,
+            csvfile1,
+            weight,
+            npz,
+            time,
+        )
+        table0 = table[table["T"] == 0]
+        table1 = table[table["T"] == 1]
+        model0, model1 = model, model
+        nv0, nv1 = hp.nv, hp.nv
+        time0 = 0.0
+        time1 = 1.0
+        if hp.fourier:
+            fs = "FourierBasis"
+        elif hp.siren:
+            fs = "SIREN"
+        else:
+            fs = "None"
+
+    return (
+        table0,
+        table1,
+        model0,
+        model1,
+        nv0,
+        nv1,
+        time0,
+        time1,
+        dataname,
+        normalize,
+        fs,
+        method,
+    )
+
+
+def predict_z(model, nv, grid_indices, normalize, bs=2048, time=0):
+    grid = grid_indices.copy()
+    iterator = XYZ_predefinedgrid(
+        grid,
+        nv,
+        normalize=normalize,
+        time=time,
+    )
     model = model.cuda()
-    z = predict_loop(loader, model)
+    z = predict_loop(iterator, bs, model.eval())
     z = np.array(z.cpu())
     z = z * nv[2][1] + nv[2][0]
     return z
