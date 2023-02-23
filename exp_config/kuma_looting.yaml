@@ -2,7 +2,7 @@ configname: exp_config/kuma.yaml
 out: result/looting/
 path: data/looting/*
 extension: ply
-epochs: 50
+epochs: 100
 trials: 50
 norm: one_minus
 single_method: [M, M+L1TD, M+TVN, M+TVN+L1TD]
