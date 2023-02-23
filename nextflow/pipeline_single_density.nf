@@ -56,7 +56,7 @@ process post_processing_mse {
     publishDir "${params.out}/double/${NAME}/", mode: 'symlink', overwrite: true
 
     input:
-        tuple val(NAME), path(NPZ), path(WEIGHTS), path(FILE0), path(FILE1), val(METHOD)
+        tuple val(NAME), path(NPZ), path(WEIGHT), path(FILE0), path(FILE1), val(METHOD)
         path GTPATH
         path CONFIG
 
@@ -66,7 +66,7 @@ process post_processing_mse {
 
     script:
         """
-        python $process single_${METHOD[0]} ${WEIGHTS[0]} ${WEIGHTS[1]} ${FILE0} ${FILE1} ${NPZ[0]} ${NPZ[1]} ${GTPATH} ${CONFIG}
+        python $process single_${METHOD[0]} ${WEIGHT} ${FILE0} ${FILE1} ${NPZ} ${GTPATH} ${CONFIG}
         """
 }
 
