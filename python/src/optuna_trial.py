@@ -68,11 +68,6 @@ def add_config_optuna_to_opt(opt, trial):
         model_hp.lambda_tvn = trial.suggest_float(
             "lambda_tvn", opt.p.lambda_tvn[0], opt.p.lambda_tvn[1], log=True
         )
-    if model_hp.tvn or model_hp.L1_time_gradient:
-        model_hp.loss_tvn = trial.suggest_categorical(
-            "loss_tvn",
-            opt.p.loss_tvn,
-        )
 
     if model_hp.siren:
         model_hp.architecture = "siren"
