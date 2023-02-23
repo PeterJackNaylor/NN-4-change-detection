@@ -55,7 +55,7 @@ z0_pred = predict_z(
     normalize=normalize,
     time=time0,
 )
-mse0 = ((z0 - z0_pred) ** 2).mean()
+mse0 = ((z0[:, 0] - z0_pred) ** 2).mean()
 
 z1_pred = predict_z(
     model1,
@@ -65,7 +65,7 @@ z1_pred = predict_z(
     time=time1,
 )
 
-mse1 = ((z1 - z1_pred) ** 2).mean()
+mse1 = ((z1[:, 0] - z1_pred) ** 2).mean()
 
 name_csv = f"{method}_{dataname}_reconstruction_results.csv"
 
