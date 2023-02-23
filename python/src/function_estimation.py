@@ -79,11 +79,11 @@ def continuous_diff(x, model):
 
 def pick_loss(name):
     if name == "l2":
-        return nn.MSELoss()
+        return nn.MSELoss(reduction="none")
     elif name == "l1":
-        return nn.L1Loss()
+        return nn.L1Loss(reduction="none")
     elif name == "huber":
-        return nn.HuberLoss()
+        return nn.HuberLoss(reduction="none")
 
 
 def estimate_density(
@@ -114,17 +114,26 @@ def estimate_density(
     L1_time_gradient = opt.L1_time_gradient
     if L1_time_gradient:
         print("Using L1TG")
-        lambda_t_grad = opt.lambda_discrete
-        # loss_fn_grad = nn.L1Loss()
+        lambda_tvn_t = opt.lambda_tvn_t
+        lambda_tvn_t_sd = opt.lambda_tvn_t_sd
+        mean_t = torch.zeros((opt.bs,), device="cuda")
+        std_t = lambda_tvn_t_sd * torch.ones((opt.bs,), device="cuda")
+    else:
+        lambda_tvn_t = 0
     tvn = opt.tvn
     if tvn:
         print("Using TVN")
         std_data = torch.std(dataset.samples[:, 0:2], dim=0)
-        mean_rd = torch.zeros((opt.bs, 2), device="cuda")
-        std_rd = std_data * torch.ones((opt.bs, 2), device="cuda")
-        tv_zeros = torch.zeros((opt.bs, 2), device="cuda")
-        lambda_t_grad = opt.lambda_tvn
-        loss_fn_tvn = pick_loss(opt.loss_tvn)
+        mean_xy = torch.zeros((opt.bs, 2), device="cuda")
+        std_xy = std_data * torch.ones((opt.bs, 2), device="cuda")
+        lambda_tvn = opt.lambda_tvn
+    else:
+        lambda_tvn = 0
+    cont_grad = L1_time_gradient or tvn
+    if cont_grad:
+        coef = torch.Tensor([lambda_tvn, lambda_tvn, lambda_tvn_t]).to("cuda")
+        grad_zeros = torch.zeros((opt.bs, 3), device="cuda")
+        loss_fn_grad = pick_loss(opt.loss_tvn)
 
     loss_fn = nn.MSELoss()
 
@@ -159,7 +168,7 @@ def estimate_density(
                 else:
                     loss = lmse
 
-                if tvn:
+                if cont_grad:
                     ind = torch.randint(
                         0,
                         n_data,
@@ -168,12 +177,19 @@ def estimate_density(
                         device="cuda",
                     )
                     x_sample = dataset.samples[ind, :]
-                    noise = torch.normal(mean_rd, std_rd)
                     x_sample.requires_grad_(False)
-                    x_sample[:, 0:2] += noise
+                    if tvn:
+                        noise_xy = torch.normal(mean_xy, std_xy)
+                        x_sample[:, 0:2] += noise_xy
+                    if L1_time_gradient:
+                        noise_t = torch.normal(mean_t, std_t)
+                        x_sample[:, 2] += noise_t
+
                     dz_dxy = continuous_diff(torch.Tensor(x_sample), model)
-                    tv_norm = loss_fn_tvn(dz_dxy[:, 0:2], tv_zeros)
-                    loss = loss + lambda_t_grad * tv_norm
+                    tv_norm = (
+                        coef * loss_fn_grad(dz_dxy, grad_zeros).sum(axis=1)
+                    ).sum()
+                    loss = loss + tv_norm
 
             loss.backward()
             # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.)

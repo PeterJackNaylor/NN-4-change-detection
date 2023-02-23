@@ -57,10 +57,16 @@ def add_config_optuna_to_opt(opt, trial):
         )
 
     if model_hp.L1_time_gradient:
-        model_hp.lambda_gradient_time = trial.suggest_float(
-            "lambda_gradient_time",
-            opt.p.lambda_gradient_time[0],
-            opt.p.lambda_gradient_time[1],
+        model_hp.lambda_tvn_t = trial.suggest_float(
+            "lambda_tvn_t",
+            opt.p.lambda_tvn_t[0],
+            opt.p.lambda_tnv_t[1],
+            log=True,
+        )
+        model_hp.lambda_tvn_t_sd = trial.suggest_float(
+            "lambda_tvn_t_sd",
+            opt.p.lambda_tvn_t_sd[0],
+            opt.p.lambda_tvn_t_sd[1],
             log=True,
         )
 
@@ -68,6 +74,7 @@ def add_config_optuna_to_opt(opt, trial):
         model_hp.lambda_tvn = trial.suggest_float(
             "lambda_tvn", opt.p.lambda_tvn[0], opt.p.lambda_tvn[1], log=True
         )
+    if model_hp.tvn or model_hp.L1_time_gradient:
         model_hp.loss_tvn = trial.suggest_categorical(
             "loss_tvn",
             opt.p.loss_tvn,
@@ -151,10 +158,12 @@ def return_best_model(opt, params):
         model_hp.lambda_discrete = params["lambda_discrete"]
 
     if model_hp.L1_time_gradient:
-        model_hp.lambda_gradient_time = params["lambda_gradient_time"]
+        model_hp.lambda_tvn_t = params["lambda_tvn_t"]
+        model_hp.lambda_tvn_t_sd = params["lambda_tvn_t_sd"]
 
     if model_hp.tvn:
         model_hp.lambda_tvn = params["lambda_tvn"]
+    if model_hp.tvn or model_hp.L1_time_gradient:
         model_hp.loss_tvn = params["loss_tvn"]
 
     time = 0 if opt.csv1 else -1

@@ -22,11 +22,11 @@ def main():
     model_hp.bs = 1024 * 16
     model_hp.mapping_size = 512
     model_hp.scale = 4
-    # model_hp.architecture = "skip-5"  # "Vlarge"
-    # model_hp.activation = "relu"
+    model_hp.architecture = "skip-5"  # "Vlarge"
+    model_hp.activation = "tanh"
     model_hp.lr = 0.0001
     model_hp.wd = 0.00005
-    opt.method = "M+L1TD"
+    opt.method = "M+TVN"
     opt.p.norm = "one_minus"
 
     model_hp.L1_time_discrete = "L1TD" in opt.method
@@ -34,10 +34,12 @@ def main():
     model_hp.tvn = "TVN" in opt.method
     if model_hp.L1_time_discrete:
         model_hp.lambda_discrete = 0.08
-    if model_hp.L1_time_gradient:
-        model_hp.lambda_gradient_time = 0.2
     if model_hp.tvn:
         model_hp.lambda_tvn = 0.005
+    if model_hp.L1_time_gradient:
+        model_hp.lambda_tvn_t = 0.005
+        model_hp.lambda_tvn_t_sd = 0.01
+    if model_hp.tvn or model_hp.L1_time_gradient:
         model_hp.loss_tvn = "l1"
 
     model, model_hp = train_and_test(time, opt, model_hp)
