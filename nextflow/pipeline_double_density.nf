@@ -36,7 +36,7 @@ process post_processing {
     publishDir "${params.out}/double/${NAME}/", mode: 'symlink', overwrite: true
 
     input:
-        file(PY)
+        path PY
         tuple val(NAME), path(NPZ), path(WEIGHTS), path(FILE), val(METHOD)
         path CONFIG
 
@@ -59,7 +59,7 @@ process post_processing_mse {
 
     input:
         tuple val(NAME), path(NPZ), path(WEIGHTS), path(FILE), val(METHOD)
-        path GT_REC
+        path GTPATH
         path CONFIG
 
     output:
@@ -68,11 +68,10 @@ process post_processing_mse {
 
     script:
         """
-        python $process double_${METHOD[0]} ${WEIGHTS[0]} ${WEIGHTS[1]} ${FILE[0]} ${FILE[1]} ${NPZ[0]} ${NPZ[1]} ${GT_REC[0]} ${GT_REC[1]} ${CONFIG}
+        python $process double_${METHOD[0]} ${WEIGHTS[0]} ${WEIGHTS[1]} ${FILE[0]} ${FILE[1]} ${NPZ[0]} ${NPZ[1]} ${GTPATH} ${CONFIG}
         """
 }
-
-workflow two_density {
+workflow two_density_rd {
 
     take:
         data
@@ -88,4 +87,25 @@ workflow two_density {
 
     emit:
         post_processing.out[0]
+}
+
+workflow two_density {
+
+    take:
+        data
+        feature_method
+        method
+        config
+        py
+        path
+
+    main:
+        two_density_estimation(data, feature_method, method, config)
+        two_density_estimation.out[0].groupTuple().set{grouped}
+        post_processing(py, grouped, config)
+        post_processing_mse(grouped, path, config)
+
+    emit:
+        post_processing.out[0]
+        post_processing_mse.out[0]
 }

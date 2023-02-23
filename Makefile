@@ -18,7 +18,7 @@ clipped:
 	nextflow run nextflow/main.nf -resume --extension txt -profile raiden
 
 clipped_home:
-	nextflow run nextflow/main.nf -params-file exp_config/home.yaml -resume
+	nextflow run nextflow/main.nf -params-file exp_config/home.yaml -resume -profile local
 
 looting_home:
-	nextflow run nextflow/main_real_data.nf -params-file exp_config/looting_home.yaml -resume
+	nextflow run nextflow/main_real_data.nf -params-file exp_config/looting_home.yaml -resume -profile local

@@ -1,7 +1,7 @@
 
 include { prepare_txt_real_data } from './data_preparation.nf'
-include { two_density } from './pipeline_double_density.nf'
-include { one_density } from './pipeline_single_density.nf'
+include { two_density_rd } from './pipeline_double_density.nf'
+include { one_density_rd } from './pipeline_single_density.nf'
 
 
 // IFL Parameters
@@ -20,8 +20,8 @@ workflow {
         prepare_txt_real_data.out[1] .set{pC}
 
 
-        two_density(pC, feature_method, double_method, config, process_py)
-        one_density(ppC, feature_method, single_method, config, process_py)
+        two_density_rd(pC, feature_method, double_method, config, process_py)
+        one_density_rd(ppC, feature_method, single_method, config, process_py)
 
-        two_density.out.concat(one_density.out).collectFile(name: "${params.out}/benchmark.csv", skip: 1, keepHeader: true)
+        two_density_rd.out.concat(one_density_rd.out).collectFile(name: "${params.out}/benchmark.csv", skip: 1, keepHeader: true)
 }

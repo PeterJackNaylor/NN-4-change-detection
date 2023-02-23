@@ -34,7 +34,7 @@ process post_processing {
     publishDir "${params.out}/single/${NAME}/", mode: 'symlink', overwrite: true
 
     input:
-        file(PY)
+        path PY
         tuple val(NAME), path(NPZ), path(WEIGHT), path(FILE0), path(FILE1), val(METHOD)
         path CONFIG
 
@@ -48,7 +48,29 @@ process post_processing {
         """
 }
 
-workflow one_density {
+process = file("python/src/reconstruction_mse.py")
+
+process post_processing_mse {
+
+    label "gpu"
+    publishDir "${params.out}/double/${NAME}/", mode: 'symlink', overwrite: true
+
+    input:
+        tuple val(NAME), path(NPZ), path(WEIGHTS), path(FILE0), path(FILE1), val(METHOD)
+        path GTPATH
+        path CONFIG
+
+    output:
+        path("*.csv")
+        path("*.png")
+
+    script:
+        """
+        python $process single_${METHOD[0]} ${WEIGHTS[0]} ${WEIGHTS[1]} ${FILE[0]} ${FILE[1]} ${NPZ[0]} ${NPZ[1]} ${GTPATH} ${CONFIG}
+        """
+}
+
+workflow one_density_rd {
 
     take:
         paired_data
@@ -63,4 +85,24 @@ workflow one_density {
 
     emit:
         post_processing.out[0]
+}
+
+workflow one_density {
+
+    take:
+        paired_data
+        feature_method
+        method
+        config
+        py
+        path
+
+    main:
+        one_density_estimation(paired_data, feature_method, method, config)
+        post_processing(py, one_density_estimation.out[0], config)
+        post_processing_mse(one_density_estimation.out[0],  path, config)
+
+    emit:
+        post_processing.out[0]
+        post_processing_mse.out[0]
 }

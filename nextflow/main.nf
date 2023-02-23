@@ -16,7 +16,7 @@ workflow {
 
     main:
         prepare_data(params.path, params.extension)
-        one_density(prepare_data.out[0], feature_method, single_method, config, process_py)
-        two_density(prepare_data.out[1], feature_method, double_method, config, process_py)
+        one_density(prepare_data.out[0], feature_method, single_method, config, process_py, params.path)
+        two_density(prepare_data.out[1], feature_method, double_method, config, process_py, params.path)
         two_density.out.concat(one_density.out).collectFile(name: "${params.out}/benchmark.csv", skip: 1, keepHeader: true)
 }
