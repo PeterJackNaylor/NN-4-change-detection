@@ -3,11 +3,11 @@ out: result/looting/
 path: data/looting/*
 extension: ply
 epochs: 50
-trials: 20
+trials: 50
 norm: one_minus
 single_method: [M, M+L1TD, M+TVN, M+TVN+L1TD]
 double_method: []
-feature_method: [--fourier]
+feature_method: [--fourier, --siren]
 lr: #log search
   - 1.e-5 # min
   - 1.e-3 # max
@@ -24,13 +24,13 @@ lambda_discrete: #log search
   - 1.e-4 # min
   - 1.e-2 # max
 lambda_tvn_t: #log search
-  - 1.e-4 # min
+  - 1.e-5 # min
   - 1.e-2 # max
 lambda_tvn_t_sd: #log search
-  - 1.e-4 # min
+  - 1.e- # min
   - 5.e-1 # max
 lambda_tvn: #log search
-  - 1.e-4 # min
+  - 1.e-5 # min
   - 1.e-2 # max
 siren:
   hidden_num: [1, 3]
