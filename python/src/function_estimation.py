@@ -187,7 +187,7 @@ def estimate_density(
 
                     dz_dxy = continuous_diff(torch.Tensor(x_sample), model)
                     tv_norm = (
-                        coef * loss_fn_grad(dz_dxy, grad_zeros).sum(axis=1)
+                        coef * loss_fn_grad(dz_dxy, grad_zeros).sum(axis=0)
                     ).sum()
                     loss = loss + tv_norm
 
