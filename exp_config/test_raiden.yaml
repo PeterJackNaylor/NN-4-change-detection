@@ -10,9 +10,6 @@ fourier: [--fourier]
 lr: #log search
   - 1.e-5 # min
   - 1.e-1 # max
-wd: #log search
-  - 1.e-5 # min
-  - 1.e+1 # max
 bs: # power of 2 search
   - 9 # 512 # min
   - 12 # 2048 # max

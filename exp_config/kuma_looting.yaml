@@ -11,9 +11,6 @@ feature_method: [--fourier]
 lr: #log search
   - 1.e-5 # min
   - 1.e-3 # max
-wd: #log search
-  - 1.e-6 # min
-  - 1.e-4 # max
 bs: # power of 2 search
   - 10 # 512 # min
   - 14 # 2048 # max

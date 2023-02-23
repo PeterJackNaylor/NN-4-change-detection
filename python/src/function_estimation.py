@@ -102,38 +102,28 @@ def estimate_density(
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=opt.lr,
-        weight_decay=opt.wd,
     )
     optimizer = LARS(optimizer=optimizer, eps=1e-8, trust_coef=0.001)
 
     L1_time_discrete = opt.L1_time_discrete
     if L1_time_discrete:
-        print("Using L1TD")
         lambda_t_d = opt.lambda_discrete
         loss_fn_t = nn.L1Loss()
     L1_time_gradient = opt.L1_time_gradient
     if L1_time_gradient:
-        print("Using L1TG")
         lambda_tvn_t = opt.lambda_tvn_t
         lambda_tvn_t_sd = opt.lambda_tvn_t_sd
         mean_t = torch.zeros((opt.bs,), device="cuda")
         std_t = lambda_tvn_t_sd * torch.ones((opt.bs,), device="cuda")
-    else:
-        lambda_tvn_t = 0
+        loss_tvn_t = nn.L1Loss()
     tvn = opt.tvn
     if tvn:
-        print("Using TVN")
         std_data = torch.std(dataset.samples[:, 0:2], dim=0)
         mean_xy = torch.zeros((opt.bs, 2), device="cuda")
         std_xy = std_data * torch.ones((opt.bs, 2), device="cuda")
         lambda_tvn = opt.lambda_tvn
-    else:
-        lambda_tvn = 0
+        loss_tvn = nn.L1Loss()
     cont_grad = L1_time_gradient or tvn
-    if cont_grad:
-        coef = torch.Tensor([lambda_tvn, lambda_tvn, lambda_tvn_t]).to("cuda")
-        grad_zeros = torch.zeros((opt.bs, 3), device="cuda")
-        loss_fn_grad = pick_loss(opt.loss_tvn)
 
     loss_fn = nn.MSELoss()
 
@@ -186,10 +176,10 @@ def estimate_density(
                         x_sample[:, 2] += noise_t
 
                     dz_dxy = continuous_diff(torch.Tensor(x_sample), model)
-                    tv_norm = (
-                        coef * loss_fn_grad(dz_dxy, grad_zeros).sum(axis=0)
-                    ).sum()
-                    loss = loss + tv_norm
+                    if tvn:
+                        loss = loss + lambda_tvn * loss_tvn(dz_dxy[:, 0:2], mean_xy)
+                    if L1_time_gradient:
+                        loss = loss + lambda_tvn_t * loss_tvn_t(dz_dxy[:, 2], mean_t)
 
             loss.backward()
             # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.)

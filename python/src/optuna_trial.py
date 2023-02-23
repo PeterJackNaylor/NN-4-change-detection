@@ -16,12 +16,6 @@ def add_config_optuna_to_opt(opt, trial):
         opt.p.lr[1],
         log=True,
     )
-    model_hp.wd = trial.suggest_float(
-        "weight_decay",
-        opt.p.wd[0],
-        opt.p.wd[1],
-        log=True,
-    )
     bs_int = trial.suggest_int(
         "bs_int",
         opt.p.bs[0],
@@ -131,7 +125,6 @@ def return_best_model(opt, params):
     model_hp.verbose = opt.p.verbose
     model_hp.epochs = opt.p.epochs
     model_hp.lr = params["learning_rate"]
-    model_hp.wd = params["weight_decay"]
     bs_int = params["bs_int"]
     model_hp.bs = int(2**bs_int)
     if model_hp.siren or opt.fourier:
@@ -163,8 +156,6 @@ def return_best_model(opt, params):
 
     if model_hp.tvn:
         model_hp.lambda_tvn = params["lambda_tvn"]
-    if model_hp.tvn or model_hp.L1_time_gradient:
-        model_hp.loss_tvn = params["loss_tvn"]
 
     time = 0 if opt.csv1 else -1
     model, model_hp = train_and_test(

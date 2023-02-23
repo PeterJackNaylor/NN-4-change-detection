@@ -28,13 +28,13 @@ process one_density_estimation {
         """
 }
 
-process = file("python/src/process_diff.py")
 
 process post_processing {
     label "gpu"
     publishDir "${params.out}/single/${NAME}/", mode: 'symlink', overwrite: true
 
     input:
+        file(PY)
         tuple val(NAME), path(NPZ), path(WEIGHT), path(FILE0), path(FILE1), val(METHOD)
         path CONFIG
 
@@ -44,7 +44,7 @@ process post_processing {
 
     script:
         """
-        python $process single_${METHOD} ${WEIGHT} ${FILE0} ${FILE1} ${NPZ} ${CONFIG}
+        python $PY single_${METHOD} ${WEIGHT} ${FILE0} ${FILE1} ${NPZ} ${CONFIG}
         """
 }
 
@@ -55,10 +55,11 @@ workflow one_density {
         feature_method
         method
         config
+        py
 
     main:
         one_density_estimation(paired_data, feature_method, method, config)
-        post_processing(one_density_estimation.out[0], config)
+        post_processing(py, one_density_estimation.out[0], config)
 
     emit:
         post_processing.out[0]

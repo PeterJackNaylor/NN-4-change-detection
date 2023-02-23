@@ -19,15 +19,21 @@ def main():
     model_hp.epochs = opt.p.epochs
 
     time = 0 if opt.csv1 else -1
-    model_hp.bs = 1024 * 16
-    model_hp.mapping_size = 512
-    model_hp.scale = 4
-    model_hp.architecture = "skip-5"  # "Vlarge"
-    model_hp.activation = "tanh"
-    model_hp.lr = 0.0001
-    model_hp.wd = 0.00005
-    opt.method = "M+TVN"
+    model_hp.bs = 2**16
+    model_hp.scale = 256
+    model_hp.lr = 1e-4
+    opt.method = "M"
     opt.p.norm = "one_minus"
+    if opt.siren:
+        print("Using siren")
+        model_hp.architecture = "siren"
+        model_hp.siren_hidden_num = 5
+        model_hp.siren_hidden_dim = 256
+        model_hp.siren_skip = True
+    else:
+        model_hp.mapping_size = 4
+        model_hp.architecture = "skip-5"  # "Vlarge"
+        model_hp.activation = "tanh"
 
     model_hp.L1_time_discrete = "L1TD" in opt.method
     model_hp.L1_time_gradient = "L1TG" in opt.method

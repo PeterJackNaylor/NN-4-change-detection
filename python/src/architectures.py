@@ -221,7 +221,7 @@ class SirenLayer(nn.Module):
         self,
         in_f,
         out_f,
-        w0=256,
+        w0=30,
         is_first=False,
         is_last=False,
     ):

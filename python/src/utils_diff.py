@@ -28,9 +28,8 @@ def clean_hp(d):
     return d
 
 
-def load_csv_weight_npz(csv_file0, csv_file1, weight, npz, time=-1):
-
-    table = pd.read_csv(csv_file0)
+def load_tables(csv0, csv1):
+    table = pd.read_csv(csv0)
     label = "label_ch" in table.columns
     if label:
         columns = ["X", "Y", "Z", "label_ch"]
@@ -40,13 +39,19 @@ def load_csv_weight_npz(csv_file0, csv_file1, weight, npz, time=-1):
     if label:
         table.columns = ["X", "Y", "Z", "label"]
     table["T"] = 0
-    if csv_file1:
-        table1 = pd.read_csv(csv_file1)[columns]
+    if csv1:
+        table1 = pd.read_csv(csv1)[columns]
         if label:
             table1.columns = ["X", "Y", "Z", "label"]
         table1["T"] = 1
         table = pd.concat([table, table1], axis=0)
     table = table.reset_index(drop=True)
+    return table
+
+
+def load_csv_weight_npz(csv_file0, csv_file1, weight, npz, time=-1):
+
+    table = load_tables(csv_file0, csv_file1)
 
     npz = np.load(npz)
     hp = AttrDict(npz)
