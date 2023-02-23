@@ -53,7 +53,7 @@ process = file("python/src/reconstruction_mse.py")
 process post_processing_mse {
 
     label "gpu"
-    publishDir "${params.out}/double/${NAME}/", mode: 'symlink', overwrite: true
+    publishDir "${params.out}/single/${NAME}/", mode: 'symlink', overwrite: true
 
     input:
         tuple val(NAME), path(NPZ), path(WEIGHT), path(FILE0), path(FILE1), val(METHOD)
@@ -62,7 +62,6 @@ process post_processing_mse {
 
     output:
         path("*.csv")
-        path("*.png")
 
     script:
         """

@@ -64,7 +64,6 @@ process post_processing_mse {
 
     output:
         path("*.csv")
-        path("*.png")
 
     script:
         """
