@@ -63,13 +63,14 @@ def prep_data(csv):
 def box_plot_fourrier(table, var):
     t = table.copy()
     t = t[t["method"] == "single_M+L1TD"]
-    fig = px.box(t, x="name", y=var, color="fourrier")
+
+    fig = px.box(t, x="name", y=var, color="fs")
     fig.write_image("box_plot_importance_fourrier_{}.png".format(var))
 
 
 def box_plot_different_method(table, var, only_good=True):
     t = table.copy()
-    t = t[t["fourrier"]]
+    t = t[t["fs"] == "FourierBasis"]
     if only_good:
         suffixe = "only_good"
         t = t[~t["method"].isin(["double_M", "double_M+TVN"])]
@@ -100,23 +101,26 @@ def box_plot_different_method(table, var, only_good=True):
     fig.write_image("box_plot_method_{}{}.png".format(var, suffixe))
 
 
-def table_avg(table):
-    auc = pd.pivot_table(
-        table, values="AUC", index="data", columns="method", aggfunc=np.mean
-    )
-    auc.loc["Avg"] = auc.mean(axis=0)
-    iou = pd.pivot_table(
-        table,
-        values="IoU_gmm",
-        index="data",
-        columns="method",
-        aggfunc=np.mean,
-    )
-    iou.loc["Avg"] = iou.mean(axis=0)
-    print("AUC")
-    print(auc)
-    print("IoU")
-    print(iou)
+def table_avg(df):
+
+    for var in df.fs.unique():
+        table = df.copy()[df["fs"] == var].copy()
+        auc = pd.pivot_table(
+            table, values="AUC", index="data", columns="method", aggfunc=np.mean
+        )
+        auc.loc["Avg"] = auc.mean(axis=0)
+        iou = pd.pivot_table(
+            table,
+            values="IoU_gmm",
+            index="data",
+            columns="method",
+            aggfunc=np.mean,
+        )
+        iou.loc["Avg"] = iou.mean(axis=0)
+        print("AUC {}".format(var))
+        print(auc)
+        print("IoU {}".format(var))
+        print(iou)
 
 
 def main():
