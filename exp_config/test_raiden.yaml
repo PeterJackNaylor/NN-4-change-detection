@@ -7,7 +7,7 @@ trials: 10
 norm: one_minus
 single_method: [M]
 double_method: [M]
-fourier: [--fourier]
+feature_method: [--fourier, --siren]
 lr: #log search
   - 1.e-5 # min
   - 1.e-1 # max
