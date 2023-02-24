@@ -19,6 +19,7 @@ import pandas as pd
     normalize,
     fs,
     method,
+    lambda_t,
 ) = load_data(sys)
 
 xy_onz0 = table0[["X", "Y"]].values.astype("float32")

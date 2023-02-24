@@ -43,12 +43,15 @@ def add_config_optuna_to_opt(opt, trial):
     model_hp.tvn = "TVN" in opt.method
 
     if model_hp.L1_time_discrete:
-        model_hp.lambda_discrete = trial.suggest_float(
-            "lambda_discrete",
-            opt.p.lambda_discrete[0],
-            opt.p.lambda_discrete[1],
-            log=True,
-        )
+        if opt.ablation:
+            model_hp.lambda_discrete = opt.lambda_reg
+        else:
+            model_hp.lambda_discrete = trial.suggest_float(
+                "lambda_discrete",
+                opt.p.lambda_discrete[0],
+                opt.p.lambda_discrete[1],
+                log=True,
+            )
 
     if model_hp.L1_time_gradient:
         model_hp.lambda_tvn_t = trial.suggest_float(
@@ -65,9 +68,12 @@ def add_config_optuna_to_opt(opt, trial):
         )
 
     if model_hp.tvn:
-        model_hp.lambda_tvn = trial.suggest_float(
-            "lambda_tvn", opt.p.lambda_tvn[0], opt.p.lambda_tvn[1], log=True
-        )
+        if opt.ablation:
+            model_hp.lambda_tvn = opt.lambda_reg
+        else:
+            model_hp.lambda_tvn = trial.suggest_float(
+                "lambda_tvn", opt.p.lambda_tvn[0], opt.p.lambda_tvn[1], log=True
+            )
 
     if model_hp.siren:
         model_hp.architecture = "siren"
@@ -143,14 +149,20 @@ def return_best_model(opt, params):
     model_hp.tvn = "TVN" in opt.method
 
     if model_hp.L1_time_discrete:
-        model_hp.lambda_discrete = params["lambda_discrete"]
+        if opt.ablation:
+            model_hp.lambda_discrete = opt.lambda_reg
+        else:
+            model_hp.lambda_discrete = params["lambda_discrete"]
 
     if model_hp.L1_time_gradient:
         model_hp.lambda_tvn_t = params["lambda_tvn_t"]
         model_hp.lambda_tvn_t_sd = params["lambda_tvn_t_sd"]
 
     if model_hp.tvn:
-        model_hp.lambda_tvn = params["lambda_tvn"]
+        if opt.ablation:
+            model_hp.lambda_tvn = opt.lambda_reg
+        else:
+            model_hp.lambda_tvn = params["lambda_tvn"]
 
     time = 0 if opt.csv1 else -1
     model, model_hp = train_and_test(

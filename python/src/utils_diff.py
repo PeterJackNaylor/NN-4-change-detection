@@ -123,6 +123,7 @@ def load_data(lp):
             fs = "SIREN"
         else:
             fs = "None"
+        lambda_t = None
     else:
 
         weight = lp.argv[2]
@@ -154,7 +155,10 @@ def load_data(lp):
             fs = "SIREN"
         else:
             fs = "None"
-
+        if "L1TD" in method:
+            lambda_t = npz["lambda_discrete"]
+        if "TVN" in method:
+            lambda_t = npz["lambda_tvn"]
     return (
         table0,
         table1,
@@ -168,6 +172,7 @@ def load_data(lp):
         normalize,
         fs,
         method,
+        lambda_t,
     )
 
 

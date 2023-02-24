@@ -1,0 +1,30 @@
+configname: exp_config/home_ablation.yaml
+out: result/home
+path: data/clippeddata/clippedMarco
+gtpath: data/clippeddata/clippedMarco
+extension: txt
+epochs: 50
+trials: 20
+norm: one_minus
+single_method: [M+L1TD]
+feature_method: [--siren]
+lr: #log search
+  - 1.e-5 # min
+  - 1.e-2 # max
+bs: # power of 2 search
+  - 6 # 2048 # min
+  - 8 # 16384 # max
+scale: # power of 2 search
+  - 0 # min
+  - 10 # max
+mapping_size: # power of 2 search
+  - 7 # min
+  - 11 # max
+siren:
+  hidden_num: [4, 6]
+  hidden_dim: [7, 9] # power of 2 search
+  do_skip: [1]
+act: [tanh]
+arch: [skip-5]
+lambda: [0.0001]
+verbose: 1

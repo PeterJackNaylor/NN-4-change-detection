@@ -35,11 +35,11 @@ def give_name(row):
 
 
 name_mapping = {
-    "LyonS": "High res - low noise",
-    "Lidar3": "Low res - high noise",
-    "MultiSensor": "MultiSensor",
-    "Photogrametry": "Photogrametry",
-    "Lidar05": "Low res - low noise",
+    "LyonS": "(2)",
+    "Lidar3": "(3)",
+    "MultiSensor": "(5)",
+    "Photogrametry": "(4)",
+    "Lidar05": "(1)",
 }
 
 

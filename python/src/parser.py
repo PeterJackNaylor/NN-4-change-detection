@@ -56,6 +56,18 @@ def parser_f():
         default="M",
         type=str,
     )
+
+    parser.add_argument(
+        "--ablation",
+        action="store_true",
+    )
+    parser.set_defaults(ablation=False)
+    parser.add_argument(
+        "--lambda_reg",
+        default=1e-4,
+        type=float,
+    )
+    parser.set_defaults(ablation=False)
     args = parser.parse_args()
 
     args.p = read_yaml(args.yaml_file)
