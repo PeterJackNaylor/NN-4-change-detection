@@ -61,69 +61,94 @@ print("MSE PC1:", mse1)
 size0 = table0.X.shape[0]
 size1 = table1.X.shape[0]
 
-factor = 1
 
 idx = np.arange(size1)
-np.random.shuffle(idx)
-idx = idx[: size1 // factor]
+xmax, xmin = table1.X.values.max(), table1.X.values.min()
+ymax, ymin = table1.Y.values.max(), table1.Y.values.min()
+xmid = (xmin + xmax) / 2
+ymid = (ymin + ymax) / 2
+table1 = table1.reset_index(drop=True)
+idx_bl = idx[(table1.X < xmid) & (table1.Y < ymid)]
+idx_br = idx[(table1.X >= xmid) & (table1.Y < ymid)]
+idx_tl = idx[(table1.X < xmid) & (table1.Y >= ymid)]
+idx_tr = idx[(table1.X >= xmid) & (table1.Y >= ymid)]
 
-sub_X = table1.X.values[idx]
-sub_Y = table1.Y.values[idx]
-sub_Z = table1.Z.values[idx]
-sub_diff_z_on1 = diff_z_on1[idx]
-sub_z1_on1 = z1_on1[idx]
-sub_z0_on1 = z0_on1[idx]
-
-try:
-    fig = twod_distribution(sub_diff_z_on1)
-    name_png = f"{dataname}_diffZ1_distribution.png"
-    fig.write_image(name_png)
-except ValueError and np.linalg.LinAlgError:
-    pass
-
-
-try:
-    name_png = f"{dataname}_diffZ1.png"
-    fig = scatter2d(sub_X, sub_Y, sub_diff_z_on1)
-    fig.write_image(name_png)
-except ValueError:
-    pass
-
-try:
-    idx0 = np.arange(size0)
-    np.random.shuffle(idx0)
-    idx0 = idx0[: size0 // factor]
-
-    sub_X0 = table0.X.values[idx0]
-    sub_Y0 = table0.Y.values[idx0]
-    sub_Z0 = table0.Z.values[idx0]
-    fig = scatter2d(sub_X0, sub_Y0, sub_Z0)
-    name_png = f"{dataname}_Z0.png"
-    fig.write_image(name_png)
-except ValueError:
-    pass
+idx0 = np.arange(size0)
+table0 = table0.reset_index(drop=True)
+idx0_bl = idx0[(table0.X < xmid) & (table0.Y < ymid)]
+idx0_br = idx[(table0.X >= xmid) & (table0.Y < ymid)]
+idx0_tl = idx[(table0.X < xmid) & (table0.Y >= ymid)]
+idx0_tr = idx[(table0.X >= xmid) & (table0.Y >= ymid)]
 
 
-try:
-    fig = scatter2d(sub_X, sub_Y, sub_Z)
-    name_png = f"{dataname}_Z1.png"
-    fig.write_image(name_png)
-except ValueError:
-    pass
+index_names = {
+    "top_left": idx_tl,
+    "top_right": idx_tr,
+    "bottom_left": idx_bl,
+    "bottom_right": idx_br,
+}
 
-try:
-    fig = scatter2d(sub_X, sub_Y, sub_z1_on1)
-    name_png = f"{dataname}_predictionZ1.png"
-    fig.write_image(name_png)
-except ValueError:
-    pass
+index0_names = {
+    "top_left": idx0_tl,
+    "top_right": idx0_tr,
+    "bottom_left": idx0_bl,
+    "bottom_right": idx0_br,
+}
 
-try:
-    fig = scatter2d(sub_X, sub_Y, sub_z0_on1)
-    name_png = f"{dataname}_predictionZ0.png"
-    fig.write_image(name_png)
-except ValueError:
-    pass
+
+for key, idx in index_names.items():
+    sub_X = table1.X.values[idx]
+    sub_Y = table1.Y.values[idx]
+    sub_Z = table1.Z.values[idx]
+    sub_diff_z_on1 = diff_z_on1[idx]
+    sub_z1_on1 = z1_on1[idx]
+    sub_z0_on1 = z0_on1[idx]
+
+    try:
+        fig = twod_distribution(sub_diff_z_on1)
+        name_png = f"{key}_{dataname}_diffZ1_distribution.png"
+        fig.write_image(name_png)
+    except ValueError and np.linalg.LinAlgError:
+        pass
+
+    try:
+        name_png = f"{key}_{dataname}_diffZ1.png"
+        fig = scatter2d(sub_X, sub_Y, sub_diff_z_on1)
+        fig.write_image(name_png)
+    except ValueError:
+        pass
+
+    try:
+        idx0_pos = index0_names[key]
+        sub_X0 = table1.X.values[idx0_pos]
+        sub_Y0 = table1.Y.values[idx0_pos]
+        sub_Z0 = table1.Z.values[idx0_pos]
+        fig = scatter2d(sub_X0, sub_Y0, sub_Z0)
+        name_png = f"{key}_{dataname}_Z0.png"
+        fig.write_image(name_png)
+    except ValueError:
+        pass
+
+    try:
+        fig = scatter2d(sub_X, sub_Y, sub_Z)
+        name_png = f"{key}_{dataname}_Z1.png"
+        fig.write_image(name_png)
+    except ValueError:
+        pass
+
+    try:
+        fig = scatter2d(sub_X, sub_Y, sub_z1_on1)
+        name_png = f"{key}_{dataname}_predictionZ1.png"
+        fig.write_image(name_png)
+    except ValueError:
+        pass
+
+    try:
+        fig = scatter2d(sub_X, sub_Y, sub_z0_on1)
+        name_png = f"{key}_{dataname}_predictionZ0.png"
+        fig.write_image(name_png)
+    except ValueError:
+        pass
 
 
 name_csv = f"{method}_{dataname}_results.csv"
