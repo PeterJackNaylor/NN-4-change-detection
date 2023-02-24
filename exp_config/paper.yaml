@@ -8,7 +8,7 @@ trials: 60
 norm: one_minus
 single_method: [M, M+L1TD, M+L1TD+TVN, M+TVN]
 double_method: [M, M+TVN]
-feature_method: [--fourier, --siren]
+feature_method: [--fourier, --siren, ""]
 lr: #log search
   - 1.e-5 # min
   - 1.e-2 # max
