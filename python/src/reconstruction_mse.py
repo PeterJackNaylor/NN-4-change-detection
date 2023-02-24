@@ -50,6 +50,7 @@ def find_gt(dataname, path):
     normalize,
     fs,
     method,
+    lambda_t,
 ) = load_data(sys)
 
 gt0, gt1 = find_gt(dataname, sys.argv[-2])
