@@ -4,7 +4,7 @@ path: data/full_data/
 gtpath: data/full_data/
 extension: ply
 epochs: 50
-trials: 60
+trials: 50
 norm: one_minus
 single_method: [M, M+L1TD, M+L1TD+TVN, M+TVN]
 double_method: [M, M+TVN]
