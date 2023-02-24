@@ -157,8 +157,11 @@ def load_data(lp):
             fs = "None"
         if "L1TD" in method:
             lambda_t = npz["lambda_discrete"]
-        if "TVN" in method:
+        elif "TVN" in method:
             lambda_t = npz["lambda_tvn"]
+        else:
+            lambda_t = None
+
     return (
         table0,
         table1,
