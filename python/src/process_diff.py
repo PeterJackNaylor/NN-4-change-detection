@@ -269,6 +269,7 @@ scores = {
     "len(threshold_gmm)": len(thresh_gmm),
     "MSE_PC0": mse0,
     "MSE_PC1": mse1,
+    "lambda_t": lambda_t,
 }
 if label:
     scores["AUC_nochange"] = auc_score["No change"]
