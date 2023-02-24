@@ -77,13 +77,13 @@ def continuous_diff(x, model):
     return dz_dxy
 
 
-def pick_loss(name):
-    if name == "l2":
-        return nn.MSELoss(reduction="none")
-    elif name == "l1":
-        return nn.L1Loss(reduction="none")
-    elif name == "huber":
-        return nn.HuberLoss(reduction="none")
+# def pick_loss(name):
+#     if name == "l2":
+#         return nn.MSELoss(reduction="none")
+#     elif name == "l1":
+#         return nn.L1Loss(reduction="none")
+#     elif name == "huber":
+#         return nn.HuberLoss(reduction="none")
 
 
 def estimate_density(
