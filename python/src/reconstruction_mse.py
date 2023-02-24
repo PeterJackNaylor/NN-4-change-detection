@@ -8,8 +8,8 @@ import numpy as np
 
 def find_gt(dataname, path):
     if "one" in dataname:
-        cl0 = "LyonSzero0.ply"
-        cl1 = "LyonSzero1.ply"
+        cl0 = "LyonSone0.ply"
+        cl1 = "LyonSone1.ply"
     elif "two" in dataname:
         cl0 = "LyonStwo0.ply"
         cl1 = "LyonStwo1.ply"
