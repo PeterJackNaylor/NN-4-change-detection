@@ -76,9 +76,9 @@ idx_tr = idx[(table1.X >= xmid) & (table1.Y >= ymid)]
 idx0 = np.arange(size0)
 table0 = table0.reset_index(drop=True)
 idx0_bl = idx0[(table0.X < xmid) & (table0.Y < ymid)]
-idx0_br = idx[(table0.X >= xmid) & (table0.Y < ymid)]
-idx0_tl = idx[(table0.X < xmid) & (table0.Y >= ymid)]
-idx0_tr = idx[(table0.X >= xmid) & (table0.Y >= ymid)]
+idx0_br = idx0[(table0.X >= xmid) & (table0.Y < ymid)]
+idx0_tl = idx0[(table0.X < xmid) & (table0.Y >= ymid)]
+idx0_tr = idx0[(table0.X >= xmid) & (table0.Y >= ymid)]
 
 
 index_names = {
