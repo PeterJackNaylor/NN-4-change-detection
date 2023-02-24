@@ -25,14 +25,14 @@ def find_gt(dataname, path):
     table1 = pd.DataFrame(ply_to_npy(cl1))
     table1.columns = ["X", "Y", "Z", "la"]
 
-    xmed = np.median(np.concatenate([table0[:, "X"], table1[:, "X"]], axis=0))
-    ymed = np.median(np.concatenate([table0[:, "Y"], table1[:, "Y"]], axis=0))
+    xmed = np.median(np.concatenate([table0["X"], table1["X"]], axis=0))
+    ymed = np.median(np.concatenate([table0["Y"], table1["Y"]], axis=0))
 
-    table0[:, "X"] = table0[:, "X"] - xmed
-    table1[:, "X"] = table1[:, "X"] - xmed
+    table0["X"] = table0["X"] - xmed
+    table1["X"] = table1["X"] - xmed
 
-    table0[:, "Y"] = table0[:, "Y"] - ymed
-    table1[:, "Y"] = table1[:, "Y"] - ymed
+    table0["Y"] = table0["Y"] - ymed
+    table1["Y"] = table1["Y"] - ymed
 
     return table0, table1
 
