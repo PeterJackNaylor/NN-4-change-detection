@@ -12,6 +12,9 @@ full_data_test:
 ablation_raiden:
 	nextflow run nextflow/ablation_study_hp.nf -params-file exp_config/paper_ablation.yaml -resume -profile raiden
 
+ablation_kuma:
+	nextflow run nextflow/ablation_study_hp.nf -params-file exp_config/paper_ablation.yaml -resume -profile kuma
+
 
 full_data_kuma:
 	nextflow run nextflow/main.nf -params-file exp_config/kuma.yaml -resume -profile kuma
