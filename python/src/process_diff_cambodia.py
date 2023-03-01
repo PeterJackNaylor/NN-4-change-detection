@@ -71,6 +71,8 @@ names = list(range(len(bins) - 1))
 names.reverse()
 bins.reverse()
 table1["Cat_diff"] = pd.cut(diff_z_on1, bins, labels=names)
+table1[["X", "Y", "Z", "Cat_diff"]].to_csv(f"{dataname}_xyz_T1_change.csv")
+
 
 mse0 = compute_mse(z0_on0, table0[["Z"]].values[:, 0])
 mse1 = compute_mse(z1_on1, table1[["Z"]].values[:, 0])
@@ -183,5 +185,3 @@ scores = {
 }
 
 pd.DataFrame(scores, index=[dataname]).to_csv(name_csv)
-
-table1[["X", "Y", "Z", "Cat_diff"]].to_csv(f"{key}_{dataname}_xyz_T1_change.csv")
