@@ -72,7 +72,6 @@ names.reverse()
 bins.reverse()
 table1["Cat_diff"] = pd.cut(diff_z_on1, bins, labels=names)
 
-table1[["X", "Y", "Z", "Cat_diff"]].to_csv("xyz_T1_change.csv")
 mse0 = compute_mse(z0_on0, table0[["Z"]].values[:, 0])
 mse1 = compute_mse(z1_on1, table1[["Z"]].values[:, 0])
 
@@ -141,9 +140,9 @@ for key, idx in index_names.items():
 
     try:
         idx0_pos = index0_names[key]
-        sub_X0 = table1.X.values[idx0_pos]
-        sub_Y0 = table1.Y.values[idx0_pos]
-        sub_Z0 = table1.Z.values[idx0_pos]
+        sub_X0 = table0.X.values[idx0_pos]
+        sub_Y0 = table0.Y.values[idx0_pos]
+        sub_Z0 = table0.Z.values[idx0_pos]
         fig = scatter2d(sub_X0, sub_Y0, sub_Z0)
         name_png = f"{key}_{dataname}_Z0.png"
         fig.write_image(name_png)
@@ -183,3 +182,5 @@ scores = {
 }
 
 pd.DataFrame(scores, index=[dataname]).to_csv(name_csv)
+
+table1[["X", "Y", "Z", "Cat_diff"]].to_csv(f"{key}_{dataname}_xyz_T1_change.csv")
