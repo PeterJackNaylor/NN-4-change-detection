@@ -60,11 +60,26 @@ def prep_data(csv):
     return df
 
 
-def box_plot_fourrier(table, var):
+def box_plot_feature_selection(table, var):
     t = table.copy()
     t = t[t["method"] == "single_M+L1TD"]
+    t = t.sort_values(by=["data"])
+    fig = px.box(t, x="data", y=var, color="fs")
+    fig.update_layout(legend_title_text="Feature mapping:")
+    fig.update_layout(xaxis_title=None)
+    fig.update_layout(
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        font=dict(
+            size=18,
+        ),
+    )
+    if var == "IoU_gmm":
+        fig.update_layout(yaxis_title="IoU")
 
-    fig = px.box(t, x="name", y=var, color="fs")
+    print(f"mean and sd for {var}")
+    print(t.groupby("fs").mean()[var])
+    print(t.groupby("fs").std()[var])
+
     fig.write_image("box_plot_importance_fourrier_{}.png".format(var))
 
 
@@ -118,17 +133,19 @@ def table_avg(df):
         )
         iou.loc["Avg"] = iou.mean(axis=0)
         print("AUC {}".format(var))
-        print(auc)
+        # print(auc)
+        print(auc.to_latex())
         print("IoU {}".format(var))
-        print(iou)
+        # print(iou)
+        print(iou.to_latex())
 
 
 def main():
     opt = parser_f()
     df = prep_data(opt.csv)
     # rename columns in DataFrame using dictionary
-    box_plot_fourrier(df, "AUC")
-    box_plot_fourrier(df, "IoU_gmm")
+    box_plot_feature_selection(df, "AUC")
+    box_plot_feature_selection(df, "IoU_gmm")
 
     box_plot_different_method(df, "IoU_gmm", only_good=True)
     box_plot_different_method(df, "AUC", only_good=True)

@@ -38,7 +38,7 @@ process one_density_estimation_ablation {
         each METHOD
         each LAMBDA
         path CONFIG
-
+        each REPETITIION
     output:
         tuple val(NAME), path("$NAME" + ".npz"), path("$NAME" + ".pth"), path(FILE0), path(FILE1), val(METHOD)
         path("$NAME" + "*.png")
@@ -130,15 +130,14 @@ workflow one_density_ab {
         py
         path
         lambda
+        repetition
 
     main:
-        one_density_estimation_ablation(paired_data, feature_method, method, lambda, config)
+        one_density_estimation_ablation(paired_data, feature_method, method, lambda, config, repetition)
         post_processing(py, one_density_estimation_ablation.out[0], config)
-        post_processing_mse(one_density_estimation_ablation.out[0],  path, config)
 
     emit:
         post_processing.out[0]
-        post_processing_mse.out[0]
 }
 
 

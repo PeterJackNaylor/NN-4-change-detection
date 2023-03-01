@@ -5,6 +5,7 @@ gtpath: data/full_data/
 extension: ply
 epochs: 50
 trials: 20
+repetitions: 20
 norm: one_minus
 single_method: [M+L1TD, M+TVN]
 feature_method: [--fourier, --siren]
@@ -26,5 +27,5 @@ siren:
   do_skip: [1]
 act: [tanh]
 arch: [skip-5]
-lambda: [0.00001, 0.00002, 0.00005, 0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5]
+lambda: [0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5]
 verbose: 0
