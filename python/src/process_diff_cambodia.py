@@ -67,8 +67,9 @@ bins = [
     0.9 * M,
     M,
 ]
-names = list(range(len(bins)))
-
+names = list(range(len(bins) - 1))
+names.reverse()
+bins.reverse()
 table1["Cat_diff"] = pd.cut(diff_z_on1, bins, labels=names)
 
 table1[["X", "Y", "Z", "Cat_diff"]].to_csv("xyz_T1_change.csv")
