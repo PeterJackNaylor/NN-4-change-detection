@@ -52,7 +52,7 @@ diff_z_on1 = np.nan_to_num(diff_z_on1)
 
 print("Filtering positive change")
 diff_z_on1[diff_z_on1 > 0] = 0
-M = diff_z_on1.max()
+M = diff_z_on1.min()
 
 bins = [
     0,
