@@ -115,6 +115,7 @@ index0_names = {
     "bottom_right": idx0_br,
 }
 
+size = 2
 
 for key, idx in index_names.items():
     sub_X = table1.X.values[idx]
@@ -133,7 +134,7 @@ for key, idx in index_names.items():
 
     try:
         name_png = f"{key}_{dataname}_diffZ1.png"
-        fig = scatter2d(sub_X, sub_Y, sub_diff_z_on1)
+        fig = scatter2d(sub_X, sub_Y, sub_diff_z_on1, size=size)
         fig.write_image(name_png)
     except ValueError:
         pass
@@ -143,28 +144,28 @@ for key, idx in index_names.items():
         sub_X0 = table0.X.values[idx0_pos]
         sub_Y0 = table0.Y.values[idx0_pos]
         sub_Z0 = table0.Z.values[idx0_pos]
-        fig = scatter2d(sub_X0, sub_Y0, sub_Z0)
+        fig = scatter2d(sub_X0, sub_Y0, sub_Z0, size=size)
         name_png = f"{key}_{dataname}_Z0.png"
         fig.write_image(name_png)
     except ValueError:
         pass
 
     try:
-        fig = scatter2d(sub_X, sub_Y, sub_Z)
+        fig = scatter2d(sub_X, sub_Y, sub_Z, size=size)
         name_png = f"{key}_{dataname}_Z1.png"
         fig.write_image(name_png)
     except ValueError:
         pass
 
     try:
-        fig = scatter2d(sub_X, sub_Y, sub_z1_on1)
+        fig = scatter2d(sub_X, sub_Y, sub_z1_on1, size=size)
         name_png = f"{key}_{dataname}_predictionZ1.png"
         fig.write_image(name_png)
     except ValueError:
         pass
 
     try:
-        fig = scatter2d(sub_X, sub_Y, sub_z0_on1)
+        fig = scatter2d(sub_X, sub_Y, sub_z0_on1, size=size)
         name_png = f"{key}_{dataname}_predictionZ0.png"
         fig.write_image(name_png)
     except ValueError:

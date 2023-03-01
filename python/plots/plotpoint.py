@@ -5,7 +5,7 @@ import plotly.figure_factory as ff
 import numpy as np
 
 
-def scatter2d(x, y, z, color=None):
+def scatter2d(x, y, z, color=None, size=8):
     if color is not None:
         line_opt = {
             "color": color,
@@ -21,7 +21,7 @@ def scatter2d(x, y, z, color=None):
             y=y,  # zoom to see more points at the center
             mode="markers",
             marker=dict(
-                size=8,
+                size=size,
                 color=z,
                 colorscale="Viridis",
                 line=line_opt,

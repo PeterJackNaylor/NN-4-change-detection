@@ -1,4 +1,4 @@
-configname: exp_config/kuma.yaml
+configname: exp_config/kuma_looting.yaml
 out: result/looting/
 path: data/looting/*
 extension: ply
