@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 from utils_diff import load_data, predict_z
-from utils import compute_iou, compute_auc_mc, compute_mse, gmm_predict
+from utils import compute_iou, compute_auc_mc, compute_mse, compute_mae, gmm_predict
 from plotpoint import scatter2d, twod_distribution
 import pandas as pd
 
@@ -65,6 +65,10 @@ else:
 
 mse0 = compute_mse(z0_on0, table0[["Z"]].values[:, 0])
 mse1 = compute_mse(z1_on1, table1[["Z"]].values[:, 0])
+
+mae0 = compute_mae(z0_on0, table0[["Z"]].values[:, 0])
+mae1 = compute_mae(z1_on1, table1[["Z"]].values[:, 0])
+
 
 print("MSE PC0:", mse0)
 print("MSE PC1:", mse1)
@@ -269,6 +273,8 @@ scores = {
     "len(threshold_gmm)": len(thresh_gmm),
     "MSE_PC0": mse0,
     "MSE_PC1": mse1,
+    "MAE_PC0": mae0,
+    "MAE_PC1": mae1,
     "lambda_t": lambda_t,
 }
 if label:

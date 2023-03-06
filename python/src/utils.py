@@ -130,3 +130,7 @@ def compute_auc_mc(diffz, y):
 
 def compute_mse(X, Y):
     return ((X - Y) ** 2).mean()
+
+
+def compute_mae(X, Y):
+    return (np.abs(X - Y)).mean()
