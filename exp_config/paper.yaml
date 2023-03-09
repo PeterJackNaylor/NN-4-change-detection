@@ -2,8 +2,8 @@ configname: exp_config/paper.yaml
 out: result/paper
 path: data/airborn_lidar_data/
 extension: ply
-epochs: 10 #50
-trials: 10 #50
+epochs: 50
+trials: 50
 norm: one_minus
 single_method: [M, M+TD, M+TD+TVN, M+TVN]
 double_method: [M, M+TVN]
@@ -31,5 +31,5 @@ siren:
   hidden_dim: [5, 10] # power of 2 search
   do_skip: [1]
 act: [relu, tanh]
-arch: [skip-ten-only] # [default, default-BN, default-L, skip-double, skip-L-double, skip-XL-double, skip-ten, skip-ten-only, skip-twenty]
+arch: [default, default-BN, default-L, skip-double, skip-L-double, skip-XL-double, skip-ten, skip-ten-only, skip-twenty]
 verbose: 0

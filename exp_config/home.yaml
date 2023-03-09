@@ -1,13 +1,13 @@
 configname: exp_config/home.yaml
 out: result/home
-path: data/clippeddata/clippedMarco
+path: data/path/home
 extension: txt
 epochs: 50
 trials: 5
 norm: "one_minus"
-single_method: [M+TD+TVN] #, M , M+TD, , M+TVN
-double_method: [] # [M, M+TVN]
-feature_method: [--siren] # [, --siren, ""], --fourier, ""
+single_method: [M+TD+TVN]
+double_method: []
+feature_method: [--fourier] # [--siren, --fourier, ""]
 lr: #log search
   - 1.e-5 # min
   - 1.e-3 # max
