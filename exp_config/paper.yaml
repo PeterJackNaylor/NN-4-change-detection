@@ -1,12 +1,11 @@
 configname: exp_config/paper.yaml
 out: result/paper
 path: data/full_data/
-gtpath: data/full_data/
 extension: ply
-epochs: 50
-trials: 50
+epochs: 10 #50
+trials: 10 #50
 norm: one_minus
-single_method: [M, M+L1TD, M+L1TD+TVN, M+TVN]
+single_method: [M, M+TD, M+TD+TVN, M+TVN]
 double_method: [M, M+TVN]
 feature_method: [--fourier, --siren, ""]
 lr: #log search
@@ -19,21 +18,18 @@ scale: # power of 2 search
   - 0 # min
   - 10 # max
 mapping_size: # power of 2 search
-  - 7 # min
+  - 5 # min
   - 11 # max
-lambda_discrete: #log search
-  - 1.e-5 # min
-  - 1.e+1 # max
-lambda_gradient_time: #log search
+lambda_td: #log search
   - 1.e-5 # min
   - 1.e+1 # max
 lambda_tvn: #log search
   - 1.e-5 # min
   - 1.e+1 # max
 siren:
-  hidden_num: [4, 6]
-  hidden_dim: [7, 9] # power of 2 search
+  hidden_num: [2, 8]
+  hidden_dim: [5, 10] # power of 2 search
   do_skip: [1]
-act: [tanh]
-arch: [skip-5]
+act: [relu, tanh]
+arch: [skip-ten-only] # [default, default-BN, default-L, skip-double, skip-L-double, skip-XL-double, skip-ten, skip-ten-only, skip-twenty]
 verbose: 0

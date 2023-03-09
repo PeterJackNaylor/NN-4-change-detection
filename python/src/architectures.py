@@ -16,14 +16,14 @@ def ReturnModel(
     args=True,
 ):
 
-    if arch in ["default", "default-BN", "Vlarge"]:
+    if arch in ["default", "default-BN", "default-L"]:
         mod = Fmodel(input_size, arch, args)
     elif "skip" in arch:
-        number = int(arch[-1])
+        id_ = arch[5:]
         mod = SkipModel(
             input_size,
             args,
-            number=number,
+            id_=id_,
         )
     elif arch == "siren":
         mod = SIREN(
@@ -115,7 +115,7 @@ class SkipModel(Fmodel):
         self,
         input_size,
         args,
-        number=1,
+        id_=1,
     ):
         super().__init__(input_size, "default", args)
         if args.activation == "tanh":
@@ -129,22 +129,22 @@ class SkipModel(Fmodel):
         else:
             self.first = nn.Identity()
 
-        if number == 1:
+        if id_ == "double":
             first = 512
             layer_size = [(first, 2), (256, 2), (128, 1), (64, 1)]
-        elif number == 2:
-            first = 512
-            layer_size = [(first, 10), (512, 1), (256, 1), (128, 1), (64, 1)]
-        elif number == 3:
+        elif id_ == "L-double":
             first = 1024
             layer_size = [(first, 2), (512, 2), (256, 2), (128, 2), (64, 2)]
-        elif number == 4:
+        elif id_ == "XL-double":
             first = 1024
             layer_size = [(first, 4), (512, 4), (256, 3), (128, 2), (64, 2)]
-        elif number == 5:
+        elif id_ == "ten":
+            first = 512
+            layer_size = [(first, 10), (512, 1), (256, 1), (128, 1), (64, 1)]
+        elif id_ == "ten-only":
             first = 256
             layer_size = [(first, 10)]
-        elif number == 6:
+        elif id_ == "twenty":
             first = 256
             layer_size = [(first, 10), (128, 2), (64, 2)]
 
@@ -196,7 +196,7 @@ def gen_arch(arch, act, input_size):
             nn.Linear(64, 1),
         )
 
-    elif arch == "Vlarge":
+    elif arch == "default-L":
         mod = nn.Sequential(
             nn.Linear(input_size, 1024),
             act(),

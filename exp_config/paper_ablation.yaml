@@ -1,11 +1,10 @@
 configname: exp_config/paper_ablation.yaml
 out: result/ablation
 path: data/full_data/
-gtpath: data/full_data/
 extension: ply
 epochs: 50
 trials: 20
-repetitions: 40
+repetitions: 20
 norm: one_minus
 single_method: [M+L1TD, M+TVN]
 feature_method: [--fourier, --siren]
@@ -19,13 +18,13 @@ scale: # power of 2 search
   - 0 # min
   - 10 # max
 mapping_size: # power of 2 search
-  - 7 # min
+  - 5 # min
   - 11 # max
 siren:
-  hidden_num: [4, 6]
-  hidden_dim: [7, 9] # power of 2 search
+  hidden_num: [2, 8]
+  hidden_dim: [5, 10] # power of 2 search
   do_skip: [1]
-act: [tanh]
-arch: [skip-5]
+act: [relu, tanh]
+arch: [default, default-BN, default-L, skip-double, skip-L-double, skip-XL-double, skip-ten, skip-ten-only, skip-twenty]
 lambda: [0, 0.0001, 0.0002, 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5]
 verbose: 0

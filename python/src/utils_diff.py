@@ -155,8 +155,8 @@ def load_data(lp):
             fs = "SIREN"
         else:
             fs = "None"
-        if "L1TD" in method:
-            lambda_t = float(np.load(npz)["lambda_discrete"])
+        if "TD" in method:
+            lambda_t = float(np.load(npz)["lambda_td"])
         elif "TVN" in method:
             lambda_t = float(np.load(npz)["lambda_tvn"])
         else:

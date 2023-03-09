@@ -31,9 +31,6 @@ def main():
     table0 = ply_to_npy(file0)
     table1 = ply_to_npy(file1)
 
-    # n0 = table0.shape[0]
-    # n1 = table1.shape[0]
-
     # Shift coordinates
     xmed = np.median(np.concatenate([table0[:, 0], table1[:, 0]], axis=0))
     ymed = np.median(np.concatenate([table0[:, 1], table1[:, 1]], axis=0))

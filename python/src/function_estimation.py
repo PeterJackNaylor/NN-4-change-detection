@@ -71,19 +71,9 @@ def continuous_diff(x, model):
         y,
         x,
         torch.ones_like(y),
-        # retain_graph=True,
         create_graph=True,
     )[0]
     return dz_dxy
-
-
-# def pick_loss(name):
-#     if name == "l2":
-#         return nn.MSELoss(reduction="none")
-#     elif name == "l1":
-#         return nn.L1Loss(reduction="none")
-#     elif name == "huber":
-#         return nn.HuberLoss(reduction="none")
 
 
 def estimate_density(
@@ -105,17 +95,10 @@ def estimate_density(
     )
     optimizer = LARS(optimizer=optimizer, eps=1e-8, trust_coef=0.001)
 
-    L1_time_discrete = opt.L1_time_discrete
-    if L1_time_discrete:
-        lambda_t_d = opt.lambda_discrete
+    td = opt.TD
+    if td:
+        lambda_td = opt.lambda_td
         loss_fn_t = nn.L1Loss()
-    L1_time_gradient = opt.L1_time_gradient
-    if L1_time_gradient:
-        lambda_tvn_t = opt.lambda_tvn_t
-        lambda_tvn_t_sd = opt.lambda_tvn_t_sd
-        mean_t = torch.zeros((opt.bs,), device="cuda")
-        std_t = lambda_tvn_t_sd * torch.ones((opt.bs,), device="cuda")
-        loss_tvn_t = nn.L1Loss()
     tvn = opt.tvn
     if tvn:
         std_data = torch.std(dataset.samples[:, 0:2], dim=0)
@@ -123,7 +106,7 @@ def estimate_density(
         std_xy = std_data * torch.ones((opt.bs, 2), device="cuda")
         lambda_tvn = opt.lambda_tvn
         loss_tvn = nn.L1Loss()
-    cont_grad = L1_time_gradient or tvn
+    cont_grad = tvn
 
     loss_fn = nn.MSELoss()
 
@@ -152,9 +135,9 @@ def estimate_density(
                 target_pred = model(dataset.samples[idx])
                 lmse = loss_fn(target_pred, dataset.targets[idx])
 
-                if L1_time_discrete:
+                if td:
                     t_t = model(dataset.samples_t[idx])
-                    loss = lmse + lambda_t_d * loss_fn_t(target_pred, t_t)
+                    loss = lmse + lambda_td * loss_fn_t(target_pred, t_t)
                 else:
                     loss = lmse
 
@@ -171,18 +154,11 @@ def estimate_density(
                     if tvn:
                         noise_xy = torch.normal(mean_xy, std_xy)
                         x_sample[:, 0:2] += noise_xy
-                    if L1_time_gradient:
-                        noise_t = torch.normal(mean_t, std_t)
-                        x_sample[:, 2] += noise_t
-
                     dz_dxy = continuous_diff(torch.Tensor(x_sample), model)
                     if tvn:
                         loss = loss + lambda_tvn * loss_tvn(dz_dxy[:, 0:2], mean_xy)
-                    if L1_time_gradient:
-                        loss = loss + lambda_tvn_t * loss_tvn_t(dz_dxy[:, 2], mean_t)
 
             loss.backward()
-            # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.)
             optimizer.step()
 
             if opt.verbose:

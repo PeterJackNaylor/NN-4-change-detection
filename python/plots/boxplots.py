@@ -62,7 +62,7 @@ def prep_data(csv):
 
 def box_plot_feature_selection(table, var):
     t = table.copy()
-    t = t[t["method"] == "single_M+L1TD"]
+    t = t[t["method"] == "single_M+TD"]
     t = t.sort_values(by=["data"])
     fig = px.box(t, x="data", y=var, color="fs")
     fig.update_layout(legend_title_text="Feature mapping:")
@@ -116,7 +116,7 @@ def box_plot_different_method(table, var, only_good=True):
     fig.write_image("box_plot_method_{}{}.png".format(var, suffixe))
 
 
-def table_avg(df):
+def table_avg(df, param="IoU_gmm"):
 
     for var in df.fs.unique():
         table = df.copy()[df["fs"] == var].copy()
@@ -126,7 +126,7 @@ def table_avg(df):
         auc.loc["Avg"] = auc.mean(axis=0)
         iou = pd.pivot_table(
             table,
-            values="IoU_gmm",
+            values=param,
             index="data",
             columns="method",
             aggfunc=np.mean,
@@ -143,6 +143,7 @@ def table_avg(df):
 def main():
     opt = parser_f()
     df = prep_data(opt.csv)
+    df.loc[df["fs"] == "FourierBasis", "fs"] = "RFF"
     # rename columns in DataFrame using dictionary
     box_plot_feature_selection(df, "AUC")
     box_plot_feature_selection(df, "IoU_gmm")
@@ -154,7 +155,7 @@ def main():
     box_plot_different_method(df, "AUC", only_good=False)
     box_plot_different_method(df, "MSE", only_good=False)
 
-    table_avg(df)
+    table_avg(df, param="IoU_gmm")
 
 
 if __name__ == "__main__":

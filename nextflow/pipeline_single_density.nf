@@ -81,26 +81,6 @@ process post_processing {
         """
 }
 
-process = file("python/src/reconstruction_mse.py")
-
-process post_processing_mse {
-
-    label "gpu"
-    publishDir "${params.out}/single/${NAME}/", mode: 'symlink', overwrite: true
-
-    input:
-        tuple val(NAME), path(NPZ), path(WEIGHT), path(FILE0), path(FILE1), val(METHOD)
-        path GTPATH
-        path CONFIG
-
-    output:
-        path("*.csv")
-
-    script:
-        """
-        python $process single_${METHOD[0]} ${WEIGHT} ${FILE0} ${FILE1} ${NPZ} ${GTPATH} ${CONFIG}
-        """
-}
 
 workflow one_density_rd {
 
@@ -128,7 +108,6 @@ workflow one_density_ab {
         method
         config
         py
-        path
         lambda
         repetition
 
@@ -149,14 +128,11 @@ workflow one_density {
         method
         config
         py
-        path
 
     main:
         one_density_estimation(paired_data, feature_method, method, config)
         post_processing(py, one_density_estimation.out[0], config)
-        post_processing_mse(one_density_estimation.out[0],  path, config)
 
     emit:
         post_processing.out[0]
-        post_processing_mse.out[0]
 }

@@ -1,6 +1,6 @@
 import optuna
 from functools import partial
-from main import train_and_test, pred_test_save
+from main_functions import train_and_test, pred_test_save
 from parser import parser_f, AttrDict
 
 
@@ -38,34 +38,19 @@ def add_config_optuna_to_opt(opt, trial):
         )
         model_hp.scale = int(2**scale_int)
 
-    model_hp.L1_time_discrete = "L1TD" in opt.method
-    model_hp.L1_time_gradient = "L1TG" in opt.method
+    model_hp.TD = "TD" in opt.method
     model_hp.tvn = "TVN" in opt.method
 
-    if model_hp.L1_time_discrete:
+    if model_hp.TD:
         if opt.ablation:
-            model_hp.lambda_discrete = opt.lambda_reg
+            model_hp.lambda_td = opt.lambda_reg
         else:
-            model_hp.lambda_discrete = trial.suggest_float(
-                "lambda_discrete",
-                opt.p.lambda_discrete[0],
-                opt.p.lambda_discrete[1],
+            model_hp.lambda_td = trial.suggest_float(
+                "lambda_td",
+                opt.p.lambda_td[0],
+                opt.p.lambda_td[1],
                 log=True,
             )
-
-    if model_hp.L1_time_gradient:
-        model_hp.lambda_tvn_t = trial.suggest_float(
-            "lambda_tvn_t",
-            opt.p.lambda_tvn_t[0],
-            opt.p.lambda_tnv_t[1],
-            log=True,
-        )
-        model_hp.lambda_tvn_t_sd = trial.suggest_float(
-            "lambda_tvn_t_sd",
-            opt.p.lambda_tvn_t_sd[0],
-            opt.p.lambda_tvn_t_sd[1],
-            log=True,
-        )
 
     if model_hp.tvn:
         if opt.ablation:
@@ -144,19 +129,14 @@ def return_best_model(opt, params):
         model_hp.architecture = params["architecture"]
         model_hp.activation = params["act"]
 
-    model_hp.L1_time_discrete = "L1TD" in opt.method
-    model_hp.L1_time_gradient = "L1TG" in opt.method
+    model_hp.TD = "TD" in opt.method
     model_hp.tvn = "TVN" in opt.method
 
-    if model_hp.L1_time_discrete:
+    if model_hp.TD:
         if opt.ablation:
-            model_hp.lambda_discrete = opt.lambda_reg
+            model_hp.lambda_td = opt.lambda_reg
         else:
-            model_hp.lambda_discrete = params["lambda_discrete"]
-
-    if model_hp.L1_time_gradient:
-        model_hp.lambda_tvn_t = params["lambda_tvn_t"]
-        model_hp.lambda_tvn_t_sd = params["lambda_tvn_t_sd"]
+            model_hp.lambda_td = params["lambda_td"]
 
     if model_hp.tvn:
         if opt.ablation:

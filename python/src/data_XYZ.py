@@ -20,15 +20,8 @@ class XYZ(Dataset):
         time=False,
         method="M",
     ):
-        """
-        Args:
-            csv_file (string): Path to the csv file with annotations.
-            root_dir (string): Directory with all the images.
-            transform (callable, optional): Optional transform to be applied
-                on a sample.
-        """
         self.time = time
-        self.need_inverse_time = "L1TD" in method or "L1TG" in method
+        self.need_inverse_time = "TD" in method
         self.need_target = not pred_type == "grid_predictions"
         self.nv = nv
         input_size = 3 if self.time else 2
@@ -157,21 +150,6 @@ class XYZ(Dataset):
             return sample, target
 
 
-# class XYZ_sample(XYZ):
-#     def __getitem__(self, idx):
-#         return self.samples[idx]
-
-
-# class XYZ_sample_target(XYZ):
-#     def __getitem__(self, idx):
-#         return self.samples[idx], self.targets[idx]
-
-
-# class XYZ_sample_time_target(XYZ):
-#     def __getitem__(self, idx):
-#         return self.samples[idx], self.samples_t[idx], self.targets[idx]
-
-
 class XYZ_predefinedgrid(XYZ):
     def __init__(self, grid, nv=None, normalize="mean", time=False):
 
@@ -224,10 +202,7 @@ def return_dataset(
     time=False,
     method="M",
 ):
-    # if "L1TD" in method or "L1TG" in method:
-    #     data_xyz = XYZ_sample_time_target
-    # else:
-    #     data_xyz = XYZ_sample_target
+
     xyz_train = XYZ(
         csv0,
         csv1,
@@ -254,27 +229,5 @@ def return_dataset(
         time=time,
         method="M",
     )
-    # n_train = xyz_train.samples.shape[0]
-    # bs_train = bs
-    # while n_train < bs:
-    #     bs_train = bs_train // 2
 
-    # train_loader = DataLoader(
-    #     xyz_train,
-    #     batch_size=bs,
-    #     shuffle=True,
-    #     num_workers=0,
-    #     drop_last=True,
-    # )
-    # while xyz_test.samples.shape[0] < bs:
-    #     bs = bs // 2
-    # test_loader = DataLoader(
-    #     xyz_test,
-    #     batch_size=bs,
-    #     num_workers=0,
-    #     drop_last=True,
-    # )
-    # train_loader.input_size = xyz_train.input_size
     return xyz_train, xyz_test, nv
-    # return xyz_train, xyz_test, nv, bs_train
-    # return train_loader, test_loader, nv

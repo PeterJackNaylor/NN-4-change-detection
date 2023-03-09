@@ -5,7 +5,7 @@ extension: txt
 epochs: 10
 trials: 3
 norm: "one_minus"
-single_method: [M+L1TD+TVN] #, M+L1TG M , M+L1TD, , M+TVN
+single_method: [M+TD+TVN] #, M , M+TD, , M+TVN
 double_method: [] # [M, M+TVN]
 feature_method: [--siren] # [, --siren, ""], --fourier, ""
 lr: #log search
@@ -20,7 +20,7 @@ scale: # power of 2 search
 mapping_size: # power of 2 search
   - 7 # min
   - 11 # max
-lambda_discrete: #log search
+lambda_td: #log search
   - 1.e-5 # min
   - 1.e+1 # max
 lambda_gradient_time: #log search

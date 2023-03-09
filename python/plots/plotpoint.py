@@ -1,20 +1,37 @@
-import sys
-import pandas as pd
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
 import numpy as np
 
 
-def scatter2d(x, y, z, color=None, size=8):
+def scatter2d(x, y, z, color=None, size=8, color_range=[], ignore_middle=False):
+    xrange = [x.min(), x.max()]
+    yrange = [y.min(), y.max()]
+    if ignore_middle:
+        idx = np.abs(z) > 2
+        z = z.copy()[idx]
+        x = x.copy()[idx]
+        y = y.copy()[idx]
+
     if color is not None:
+        if ignore_middle:
+            color = color.copy()[idx]
+        size += 2
         line_opt = {
             "color": color,
-            "width": 1,
+            "width": 2,
             "colorscale": ["rgba(0,0,0,0)", "blue", "red"],
         }
     else:
         line_opt = {"width": 0}
-    layout = go.Layout(autosize=False, width=1000, height=1000)
+    # fig = go.Figure(layout=layout)
+    layout = go.Layout(
+        autosize=True,
+        xaxis={"title": "x-axis", "visible": False, "showticklabels": False},
+        yaxis={"title": "y-axis", "visible": False, "showticklabels": False},
+        width=1000,
+        height=1000,
+        margin={"l": 0, "r": 0, "t": 20, "b": 0},
+    )
     fig = go.Figure(
         data=go.Scattergl(
             x=x,  # non-uniform distribution
@@ -25,12 +42,17 @@ def scatter2d(x, y, z, color=None, size=8):
                 color=z,
                 colorscale="Viridis",
                 line=line_opt,
-                showscale=True,
+                showscale=False,
+                cmin=color_range[0],
+                cmax=color_range[1],
             ),
         ),
         layout=layout,
     )
-
+    fig.update_layout(xaxis_range=xrange)
+    fig.update_layout(yaxis_range=yrange)
+    # fig.update_traces(showscale=False)
+    # fig.update_coloraxes(showscale=False)
     return fig
 
 
@@ -52,44 +74,3 @@ def twod_distribution(x, groups=None):
             hist_data, group_labels, colors=["black", "blue", "red"]
         )
     return fig
-
-
-def scatter3d(x, y, z, color):
-    scatter = go.Scatter3d(
-        x=x,
-        y=y,
-        z=z,
-        mode="markers",
-        marker=dict(
-            size=2,
-            color=color,  # set color to an array/list of desired values
-            colorscale="Rainbow",  # choose a colorscale
-            opacity=0.8,
-        ),
-    )
-    return scatter
-
-
-def fig_3d(x, y, z, color):
-
-    fig = go.Figure(data=[scatter3d(x, y, z, color)])
-
-    return fig
-
-
-def main():
-
-    csv_file = sys.argv[1]
-
-    # Read data from a csv
-    table = pd.read_csv(csv_file)[["//X", "Y", "Z", "label_ch"]]
-    table.columns = ["X", "Y", "Z", "label"]
-    x, y, z = table.X.values, table.Y.values, table.Z.values
-    fig = fig_3d(x, y, z, z)
-    fig.show()
-    fig = fig_3d(x, y, z, table.label.values)
-    fig.show()
-
-
-if __name__ == "__main__":
-    main()

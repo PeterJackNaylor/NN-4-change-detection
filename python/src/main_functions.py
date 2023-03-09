@@ -6,7 +6,7 @@ from function_estimation import (
 from parser import parser_f, AttrDict
 from data_XYZ import return_dataset, return_dataset_prediction
 from architectures import ReturnModel, gen_b
-from plotpoint import scatter2d  # plot_surface, plot_tri_grid
+from plotpoint import scatter2d
 
 
 def main():
@@ -35,18 +35,15 @@ def main():
         model_hp.architecture = "skip-5"  # "Vlarge"
         model_hp.activation = "tanh"
 
-    model_hp.L1_time_discrete = "L1TD" in opt.method
-    model_hp.L1_time_gradient = "L1TG" in opt.method
+    model_hp.TD = "TD" in opt.method
     model_hp.tvn = "TVN" in opt.method
-    if model_hp.L1_time_discrete:
-        model_hp.lambda_discrete = 0.08
+    if model_hp.TD:
+        model_hp.lambda_td = 0.08
     if model_hp.tvn:
         model_hp.lambda_tvn = 0.005
-    if model_hp.L1_time_gradient:
+    if model_hp.TD:
         model_hp.lambda_tvn_t = 0.005
         model_hp.lambda_tvn_t_sd = 0.01
-    if model_hp.tvn or model_hp.L1_time_gradient:
-        model_hp.loss_tvn = "l1"
 
     model, model_hp = train_and_test(time, opt, model_hp)
 

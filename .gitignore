@@ -13,8 +13,11 @@ results
 *.npz
 .vscode/
 python/src/old/
+python/src/old_utils/
 python/plots/__pycache__/
 result/
+exp_config/old_exp
+old_Makefile
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,r,jupyternotebooks,macos,linux
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,r,jupyternotebooks,macos,linux

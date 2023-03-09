@@ -1,7 +1,6 @@
 configname: exp_config/home_ablation.yaml
 out: result/home
 path: data/clippeddata/clippedMarco
-gtpath: data/clippeddata/clippedMarco
 extension: txt
 epochs: 50
 trials: 20
@@ -25,6 +24,6 @@ siren:
   hidden_dim: [7, 9] # power of 2 search
   do_skip: [1]
 act: [tanh]
-arch: [skip-5]
-lambda: [0.0001]
+arch: [skip-ten-only]
+lambda: [0, 0.001]
 verbose: 1
