@@ -4,6 +4,9 @@ import numpy as np
 
 
 def scatter2d(x, y, z, color=None, size=8, color_range=[], ignore_middle=False):
+    cauto = False if color_range else True
+    if not cauto:
+        color_range = [None, None]
     xrange = [x.min(), x.max()]
     yrange = [y.min(), y.max()]
     if ignore_middle:
@@ -43,6 +46,7 @@ def scatter2d(x, y, z, color=None, size=8, color_range=[], ignore_middle=False):
                 colorscale="Viridis",
                 line=line_opt,
                 showscale=False,
+                cauto=cauto,
                 cmin=color_range[0],
                 cmax=color_range[1],
             ),

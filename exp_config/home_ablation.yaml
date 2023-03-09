@@ -5,7 +5,7 @@ extension: txt
 epochs: 50
 trials: 20
 norm: one_minus
-single_method: [M+L1TD]
+single_method: [M+TD]
 feature_method: [--siren]
 lr: #log search
   - 1.e-5 # min
