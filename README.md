@@ -1,27 +1,27 @@
 # NN-4-change-detection
 
 This repository contains all the necessary to reproduce the work "*IMPERSONATE: IMPlicit nEural RepreSentatiON chAnge deTEction*" by anonymous authors.
+<span style="color:red"> Add authors </span>.
+<span style="color:red"> Add paper link </span>.
 
-
-<!-- Peter Naylor, Diego Di Carlo, Arianna Traviglia, Makoto Yamada and Marco Fiorucci. -->
 <!-- You can find the paper [here](not working) (UNPUBLISHED). -->
 
 # Usage
 
 ## Installation
-Most of the required packages are listed in the `environment.yml` file and [Nextflow](https://www.nextflow.io/) should be installed to successfully launch the pipeline.
+Most of the required packages are listed in the `environment.yml` file, and [Nextflow](https://www.nextflow.io/) should be installed to launch the pipeline successfully.
 
 ## Nextflow configuration
 Please set the nextflow.config file to match your environment.
-We use two profiles, one for our local environment (debug and prototyping), and a second for the cluster when we launch large experiments.
+We use two profiles, one for our local environment (debugging and prototyping) and a second for the cluster when we launch extensive experiments.
 ## Configuration files
 
-This files can be found in the `exp_config` folder and present themselves in a yaml file.
-The first parameters correspond to the config file itself, the output folder, the data path and format.
-The next parameter control the training and hyper-parameters.
+These files can be found in the `exp_config` folder and are YAML files.
+The first parameters correspond to the config file, the output folder, the data path and the format.
+The following parameters control the training and hyper-parameters.
 In particular, a hyperparameter is a categorical list or a range given by a min and a max.
 
-For each Nextflow file, process will be spawned for each `single_method`, `double_method` and `feature_method`.
+For each Nextflow file, a process will be spawned for each `single_method`, `double_method` and `feature_method`.
 
 
 ## `txt` files
@@ -39,29 +39,31 @@ Please set the `extension` parameter to `ply`.
 
 We make available two experiments:
 
+### Simulated airborne LiDAR dataset
+
+The data can be accessed [here](https://ieee-dataport.org/open-access/urb3dcd-urban-point-clouds-simulated-dataset-3d-change-detection). We used version 1 for the paper.
 ### Benchmark
 To reproduce the tables presented in the paper and the plots, we first have to run for each configuration and dataset:
 ```
 make paper_home
 ```
-This command will produce a csv file `result/benchmark.csv` with a line per method and dataset.
-To produce the boxplots shown in Figure 4.
-In the folder `result/paper` you should find distribution plots and maps corresponding to Figure 3 and 5.
+This command will produce a CSV file `result/benchmark.csv` with a line per method, dataset, and associated metrics.
+To produce the boxplots shown in Figure 4 and Table 1 and A.1, please run the following:
+```
+python python/plots/boxplots.py --csv benchmark.csv
+```
+In addition, in the folder `result/paper`, you should find distribution plots and maps corresponding to Figures 3 and 5.
 
-
-
+To run the ablation study presented in Section 5.2, please run the following:
 ```
 make paper_ablation
 ```
+To produce the `benchmark_ablation.csv` file, which contains the metrics for each dataset, configuration and lambda values.
+Finally, to produce Figure 6, please run the following:
+```
+python python/plots/hyper_parameter.py --csv benchmark_ablation.csv
+```
 
-## Archaeological looting experiment
-
-
-
-
-## File plots
-
-
-## Output files
-
-They can be found in the csv file `result/benchmark.csv`.
+# Citation
+If you use our code, please cite us!
+<span style="color:red"> Add bib citation </span>.
