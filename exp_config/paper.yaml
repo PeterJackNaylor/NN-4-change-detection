@@ -1,6 +1,6 @@
 configname: exp_config/paper.yaml
 out: result/paper
-path: data/full_data/
+path: data/airborn_lidar_data/
 extension: ply
 epochs: 10 #50
 trials: 10 #50

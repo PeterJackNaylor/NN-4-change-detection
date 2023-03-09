@@ -6,7 +6,7 @@ epochs: 50
 trials: 20
 repetitions: 20
 norm: one_minus
-single_method: [M+L1TD, M+TVN]
+single_method: [M+TD, M+TVN]
 feature_method: [--fourier, --siren]
 lr: #log search
   - 1.e-5 # min
