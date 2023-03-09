@@ -44,7 +44,9 @@ To reproduce the tables presented in the paper and the plots, we first have to r
 ```
 make paper_home
 ```
-This command will produce a csv file `result/benchmark.csv`
+This command will produce a csv file `result/benchmark.csv` with a line per method and dataset.
+To produce the boxplots shown in Figure 4.
+In the folder `result/paper` you should find distribution plots and maps corresponding to Figure 3 and 5.
 
 
 
