@@ -29,7 +29,7 @@ def determine_mapping_and_map(Z, gm):
 def gmm_predict(Z):
 
     mean_init = np.array([0, -15, 15]).reshape(-1, 1)
-    weights_init = np.array([0.5, 0.25, 0.25])
+    weights_init = np.array([0.8, 0.15, 0.05])
     precisions_init = np.array([0.1, 0.01, 0.01]).reshape(-1, 1, 1)
     gm = gmm(
         n_components=3,

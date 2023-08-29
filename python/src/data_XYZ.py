@@ -3,6 +3,19 @@ import numpy as np
 import pandas as pd
 
 from torch.utils.data import Dataset
+from plyfile import PlyData
+
+def ply_to_npy(f):
+    with open(f, "rb") as f:
+        plydata = PlyData.read(f)
+    data = plydata["params"]
+    x = data.data["x"]
+    y = data.data["y"]
+    z = data.data["z"]
+    label = data.data["label_ch"]
+
+    table = np.vstack([x, y, z, label]).T
+    return table
 
 
 class XYZ(Dataset):
@@ -41,14 +54,13 @@ class XYZ(Dataset):
 
         elif pred_type == "grid_predictions":
             self.setup_uniform_grid(table)
-
         if normalize:
             self.normalize(normalize)
 
         self.samples = torch.tensor(self.samples).float()
         if self.need_target:
             self.targets = torch.tensor(self.targets)
-        self.send_cuda()
+        # self.send_cuda()
 
     def send_cuda(self):
         self.samples = self.samples.to("cuda")
@@ -58,9 +70,16 @@ class XYZ(Dataset):
             self.targets = self.targets.to("cuda")
 
     def read_table(self, path, time):
-        table = pd.read_csv(path)[["X", "Y", "Z"]]
-        table["T"] = time
-        return table
+        if path[-3:] == "ply":
+            pc = ply_to_npy(path)
+            table = pd.DataFrame(pc)
+            table.columns = ["X", "Y", "Z", "label"]
+            table["T"] = time
+            return table[["X", "Y", "Z", "T"]]
+        else:
+            table = pd.read_csv(path)[["X", "Y", "Z"]]
+            table["T"] = time
+            return table
 
     def split_train(self, seed, train_fraction, train):
         n = self.samples.shape[0]
