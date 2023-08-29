@@ -41,7 +41,9 @@ We make available two experiments:
 
 ### Simulated airborne LiDAR dataset
 
-The data can be accessed [here](https://ieee-dataport.org/open-access/urb3dcd-urban-point-clouds-simulated-dataset-3d-change-detection). We used version 1 for the paper.
+The data UrbDCD can be accessed [here](https://ieee-dataport.org/open-access/urb3dcd-urban-point-clouds-simulated-dataset-3d-change-detection). We used version 1 and 2 for the paper.
+
+In particular, it is UrbDCD-v2 for the colab.
 ### Benchmark
 To reproduce the tables presented in the paper and the plots, we first have to run for each configuration and dataset:
 ```

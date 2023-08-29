@@ -60,7 +60,7 @@ class XYZ(Dataset):
         self.samples = torch.tensor(self.samples).float()
         if self.need_target:
             self.targets = torch.tensor(self.targets)
-        # self.send_cuda()
+        self.send_cuda()
 
     def send_cuda(self):
         self.samples = self.samples.to("cuda")
