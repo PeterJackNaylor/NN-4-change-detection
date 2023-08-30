@@ -65,7 +65,7 @@ python python/plots/hyper_parameter.py --csv benchmark_ablation.csv
 
 # Citation
 If you use our code, please cite us!
-
+```
 @misc{naylor2023implicit,
       title={Implicit neural representation for change detection}, 
       author={Peter Naylor and Diego Di Carlo and Arianna Traviglia and Makoto Yamada and Marco Fiorucci},
@@ -74,3 +74,4 @@ If you use our code, please cite us!
       archivePrefix={arXiv},
       primaryClass={cs.CV}
 }
+```
