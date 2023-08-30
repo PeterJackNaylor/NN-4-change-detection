@@ -1,6 +1,6 @@
 # NN-4-change-detection
 
-This repository contains all the necessary to reproduce the work "*IMPERSONATE: IMPlicit nEural RepreSentatiON chAnge deTEction*" by anonymous authors.
+This repository contains all the necessary to reproduce the work "*Implicit neural representation for change detection*" by anonymous authors.
 <span style="color:red"> Add authors </span>.
 <span style="color:red"> Add paper link </span>.
 
