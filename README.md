@@ -1,10 +1,7 @@
 # NN-4-change-detection
 
-This repository contains all the necessary to reproduce the work "*Implicit neural representation for change detection*" by anonymous authors.
-<span style="color:red"> Add authors </span>.
-<span style="color:red"> Add paper link </span>.
-
-<!-- You can find the paper [here](not working) (UNPUBLISHED). -->
+This repository contains all the necessary to reproduce the work "*Implicit neural representation for change detection*" by P. Naylor, D. Di Carlo, A. Traviglia, M. Yamada and M. Fiorucci.
+You can find the paper [here](https://arxiv.org/abs/2307.15428).
 
 # Usage
 
@@ -68,4 +65,12 @@ python python/plots/hyper_parameter.py --csv benchmark_ablation.csv
 
 # Citation
 If you use our code, please cite us!
-<span style="color:red"> Add bib citation </span>.
+
+@misc{naylor2023implicit,
+      title={Implicit neural representation for change detection}, 
+      author={Peter Naylor and Diego Di Carlo and Arianna Traviglia and Makoto Yamada and Marco Fiorucci},
+      year={2023},
+      eprint={2307.15428},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
